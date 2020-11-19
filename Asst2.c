@@ -20,7 +20,8 @@
  * Used for properly joining all threads
  */
 struct ThreadNode{
-pthread_t threadID;	
+pthread_t threadID;
+char *param;
 struct ThreadNode *next;
 };
 struct ThreadNode* head = NULL;
@@ -30,8 +31,27 @@ struct ThreadNode* head = NULL;
  */
 struct ThreadNode* createThreadandStoreinLinkedList(void *(*start_routine) (void *), void *arg){ 
 struct ThreadNode *threadnode = malloc(sizeof(struct ThreadNode));
+puts("d");
 
-pthread_create(&(threadnode->threadID), NULL, start_routine, arg);
+int arg_size = strlen((*(char**)arg));
+if(arg_size){
+
+}
+
+
+//int arg_size = 40;
+printf("arg size: %d", arg_size);
+
+char *argument = malloc(sizeof(char)*arg_size+1);
+if(argument){}
+
+
+memcpy(argument, &arg, arg_size+1);
+
+puts("HERE");
+threadnode->param = argument;
+
+pthread_create(&(threadnode->threadID), NULL, start_routine, argument);
 
 if(head!=NULL){
 threadnode->next = head;
@@ -42,6 +62,7 @@ threadnode->next = NULL;
 head = threadnode;
 }
 puts("thread added");
+//threadnode->param = argument;
 return threadnode;
 }
 
@@ -65,6 +86,7 @@ puts("before pointer change");
 prev = current;
 current=current->next;
 puts("before free");
+free(prev->param);
 free(prev);
 }
 	
@@ -185,6 +207,9 @@ return newstring;
 
 void printDirectoryContents(char* directory_path){
 
+//char **ptr = malloc(sizeof(int)*10);
+//int i = 0;
+
 DIR *dirptr = opendir(directory_path);
 
 if(dirptr==NULL){
@@ -217,22 +242,25 @@ printf("Filename: " BOLDRED "%s" RESETCOLOR, direntptr->d_name);
 //will probably need to append full string here
 
 char* pathname = appendString(directory_path, direntptr->d_name);
-//printf("\tpathname: %s\t", pathname);
+printf("\tpathname: %s\t", pathname);
 int fd = open(pathname, O_RDONLY);
 
 head = createThreadandStoreinLinkedList(fileHandler, &pathname);
 
 
-/*
-struct ThreadNode* head = createThreadandStoreinLinkedList(fileHandler, (appendString(directory_path, direntptr->d_name)));
+//ptr[i] = pathname;
+
+
+//head = createThreadandStoreinLinkedList(fileHandler, &ptr[i]);
+//head = createThreadandStoreinLinkedList(fileHandler, (appendString(directory_path, direntptr->d_name)));
 
 if(head==NULL){
 
 }
-*/
-pthread_t thread2;
-pthread_create(&thread2, NULL, fileHandler, &pathname);
-pthread_join(thread2, NULL);
+
+//pthread_t thread2;
+//pthread_create(&thread2, NULL, fileHandler, &pathname);
+//pthread_join(thread2, NULL);
 //free(pathname);
 //int fd = open(direntptr->d_name, O_RDONLY);
 
@@ -258,9 +286,6 @@ pthread_join(thread2, NULL);
 
 closedir(dirptr);	
 
-
-//freeAndJoinLinkedList(head);
-//free(pathname);
 }
 
 
