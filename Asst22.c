@@ -15,6 +15,7 @@
 
 //run: ./detector /ilab/users/wa125/cs214/hw3/  
 // ./detector ./
+//./detector /ilab/users/wa125/cs214/asst2testcases/  
 
 //static pthread_mutex_t threadLLmut = PTHREAD_MUTEX_INITIALIZER;
 
@@ -59,19 +60,18 @@ return ptr;
  */
 struct ThreadNode* createThreadandStoreinLinkedList(void *(*start_routine) (void *), void *arg){ 
 struct ThreadNode *threadnode = malloc(sizeof(struct ThreadNode));
-printf("arguemnt: %s\n", (*(char**)arg));
+//printf("arguemnt: %s\n", (*(char**)arg));
 
 int arg_size = strlen((*(char**)arg));
 
-printf("arg size: %d", arg_size);
+//printf("arg size: %d", arg_size);
 
 char *argument = malloc(sizeof(char)*arg_size+1);
 
 strncpy(argument, (*(char**)arg), arg_size);
 argument[arg_size] = '\0';
 
-puts("HERE");
-printf("argument copied: %s\n", argument);
+//printf("argument copied: %s\n", argument);
 threadnode->param = argument;
 
 pthread_create(&(threadnode->threadID), NULL, start_routine, &(threadnode->param));
@@ -90,7 +90,7 @@ return threadnode;
 }
 
 void freeAndJoinLinkedList(struct ThreadNode* head){
-puts("in free and join linked list");
+//puts("in free and join linked list");
 if (head==NULL){
 return;
 }
@@ -100,17 +100,17 @@ struct ThreadNode *prev = NULL;
 struct ThreadNode *current = head;
 
 while (current!=NULL){
-puts("before join");
+//puts("before join");
 
 //printf("Thread ID: %ld", current->threadID);
 int error = pthread_join(current->threadID, NULL);	
 if (error){
 puts("COULD NOT JOIN THREADS");
 }
-puts("before pointer change");
+//puts("before pointer change");
 prev = current;
 current=current->next;
-puts("before free");
+//puts("before free");
 free(prev->param);
 free(prev);
 }
@@ -182,8 +182,8 @@ continue;
 //will probably need to append full string here
 
 char* pathname = appendString(directory_path, direntptr->d_name);
-puts("here");
-printf("\tpathname: %s\t", pathname);
+//puts("here");
+//printf("\tpathname: %s\t", pathname);
 
 head = createThreadandStoreinLinkedList(fileHandler, &pathname);
 
@@ -199,6 +199,8 @@ closedir(dirptr);
  *Used for debugging
  */
 void printDirectoryContents2(char* directory_path){
+
+ printf("\n\t*****BEGINNING OF PRINT DIRECTORY FUNCTION*****\n\n");
 
 DIR *dirptr = opendir(directory_path);
 	
@@ -241,7 +243,8 @@ while ((direntptr = readdir(dirptr))){
  	 //take care of case where open returns -1
           if(fd<0){
           perror("Line 83: Could not open file");
-          continue;
+          free(pathname);
+	  continue;
           }
 	
           off_t bytesread = lseek(fd,0, SEEK_END);
@@ -258,7 +261,7 @@ while ((direntptr = readdir(dirptr))){
           }
 
   closedir(dirptr);	
-  printf("\nEND OF PRINT DIRECTORY FUNCTION\n\n");
+  printf("\n\t*****END OF PRINT DIRECTORY FUNCTION*****\n\n");
   }
 
 
