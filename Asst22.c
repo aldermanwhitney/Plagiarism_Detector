@@ -61,6 +61,8 @@ return ptr;
  */
 struct ThreadNode* createThreadandStoreinLinkedList(void *(*start_routine) (void *), void *arg){ 
 struct ThreadNode *threadnode = malloc(sizeof(struct ThreadNode));
+puts("create thread LL funct");
+printf("arguemnt: %s\n", (*(char**)arg));
 
 int arg_size = strlen((*(char**)arg));
 
@@ -68,10 +70,13 @@ printf("arg size: %d", arg_size);
 
 char *argument = malloc(sizeof(char)*arg_size+1);
 
-memcpy(argument, &arg, arg_size+1);
+//memcpy(argument, &arg, arg_size+1);
+strncpy(argument, (*(char**)arg), arg_size);
+argument[arg_size] = '\0';
+
 
 puts("HERE");
-printf("argument copied: %s", argument);
+printf("argument copied: %s\n", argument);
 threadnode->param = argument;
 
 pthread_create(&(threadnode->threadID), NULL, start_routine, &(threadnode->param));
