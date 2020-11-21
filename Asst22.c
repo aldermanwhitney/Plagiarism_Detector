@@ -30,8 +30,7 @@ struct ThreadNode* head = NULL;
 
 
 void* fileHandler(void* ptr){
-puts("file handler");
-printf("thread is here, pathname: %s\n", *(char**)ptr);
+printf("thread in fileHandler, pathname: %s\n", *(char**)ptr);
 char* pathname = *(char**)ptr;
 int fd = open(pathname, O_RDONLY);
 
@@ -39,7 +38,6 @@ int fd = open(pathname, O_RDONLY);
    if(fd<0){
    perror("Line 83: Could not open file");
    }
-
 
    off_t bytesread = lseek(fd,0, SEEK_END);
 
@@ -61,7 +59,6 @@ return ptr;
  */
 struct ThreadNode* createThreadandStoreinLinkedList(void *(*start_routine) (void *), void *arg){ 
 struct ThreadNode *threadnode = malloc(sizeof(struct ThreadNode));
-puts("create thread LL funct");
 printf("arguemnt: %s\n", (*(char**)arg));
 
 int arg_size = strlen((*(char**)arg));
@@ -70,17 +67,14 @@ printf("arg size: %d", arg_size);
 
 char *argument = malloc(sizeof(char)*arg_size+1);
 
-//memcpy(argument, &arg, arg_size+1);
 strncpy(argument, (*(char**)arg), arg_size);
 argument[arg_size] = '\0';
-
 
 puts("HERE");
 printf("argument copied: %s\n", argument);
 threadnode->param = argument;
 
 pthread_create(&(threadnode->threadID), NULL, start_routine, &(threadnode->param));
-
 
 if(head!=NULL){
 threadnode->next = head;
@@ -133,7 +127,7 @@ int space_needed = strlen(string1) + strlen(string2) + 1;
 
 int string1_space = strlen(string1);
 int string2_space = strlen(string2);
-printf("here, space needed: %i\n", space_needed);
+//printf("here, space needed: %i\n", space_needed);
 char* newstring = malloc(space_needed);
 
 
@@ -147,7 +141,7 @@ newstring[string1_space+j]=string2[j];
 //printf("j loop, newstring[j] %c\n", newstring[string1_space+j]);
 }
 newstring[space_needed-1]='\0';
-printf("end of string cat function\n");
+//printf("end of string cat function\n");
 
 return newstring;
 }
@@ -201,6 +195,71 @@ free(pathname);
 closedir(dirptr);	
 }
 
+/**Prints Directory
+ *Used for debugging
+ */
+void printDirectoryContents2(char* directory_path){
+
+DIR *dirptr = opendir(directory_path);
+	
+if(dirptr==NULL){
+printf("Could not open directory");
+return;
+}
+
+//pointer for each entry in directory
+struct dirent *direntptr;
+
+//iterate through each entry in directory
+while ((direntptr = readdir(dirptr))){
+	
+	//If the entry is a sub directory, print name in blue
+	if(direntptr->d_type==DT_DIR){
+	printf("Directory Name: " LTBLUE "./%s\n"  RESETCOLOR, direntptr->d_name);
+	continue;
+	}
+	
+	//check if the file is executeable, if so print in red
+	if(access(direntptr->d_name, X_OK)==0){
+	printf("Filename: " BOLDRED "%s" RESETCOLOR, direntptr->d_name);
+	}
+	 else if (direntptr->d_type==DT_REG) {
+	 //if regular file, print filename in light green
+	  printf("Filename: " LTGREEN "%s" RESETCOLOR, direntptr->d_name);
+	   }
+	      else{ //else print white
+	         printf("Filename: " WHITE "%s" RESETCOLOR, direntptr->d_name);
+	         continue;    
+	      	}
+
+	      //will probably need to append full string here
+	
+         char* pathname = appendString(directory_path, direntptr->d_name);
+         printf("\tpathname: %s\t", pathname);
+         int fd = open(pathname, O_RDONLY);
+	
+ 	 //take care of case where open returns -1
+          if(fd<0){
+          perror("Line 83: Could not open file");
+          continue;
+          }
+	
+          off_t bytesread = lseek(fd,0, SEEK_END);
+	
+          //Take care of case where lseek returns -1
+          if(bytesread==-1){
+          printf("Could not read file\n");
+          }
+          else{
+          printf("  size: %li\n", bytesread);
+          }
+          close(fd);
+          free(pathname);
+          }
+
+  closedir(dirptr);	
+  printf("\nEND OF PRINT DIRECTORY FUNCTION\n\n");
+  }
 
 
 int main(int argc, char** argv){
@@ -211,6 +270,7 @@ if(argc!=2){
 return 1;
 }
 
+printDirectoryContents2(argv[1]);
 printDirectoryContents(argv[1]);
 freeAndJoinLinkedList(head);
 
