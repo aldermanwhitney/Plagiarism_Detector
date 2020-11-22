@@ -60,7 +60,7 @@ return ptr;
  */
 struct ThreadNode* createThreadandStoreinLinkedList(void *(*start_routine) (void *), void *arg){ 
 struct ThreadNode *threadnode = malloc(sizeof(struct ThreadNode));
-printf("arguemnt: %s\n", (*(char**)arg));
+//printf("arguemnt: %s\n", (*(char**)arg));
 
 int arg_size = strlen((*(char**)arg));
 
@@ -71,7 +71,7 @@ char *argument = malloc(sizeof(char)*arg_size+1);
 strncpy(argument, (*(char**)arg), arg_size);
 argument[arg_size] = '\0';
 
-printf("argument copied: %s\n", argument);
+//printf("argument copied: %s\n", argument);
 threadnode->param = argument;
 
 pthread_create(&(threadnode->threadID), NULL, start_routine, &(threadnode->param));
@@ -151,27 +151,9 @@ return newstring;
 
 void* directoryHandler(void* directory_path){
 
-puts("dir handler");
-	
-//void* fileHandler(void* ptr){
-//printf("thread in dirHandler, pathname: %s\n", *(char**)directory_path);
-
-//DIR *dirptr = opendir(*(char**)directory_path);
-
-
-//printf("thread in fileHandler, pathname: %s\n", *(char**)ptr);
-//char* dirpath = *(char**)directory_path;
-//int fd = open(pathname, O_RDONLY);
-
-
-//void* fileHandler(void* ptr){
 printf("thread in dirHandler, pathname: %s\n", *(char**)directory_path);
 char* dirpath = (*(char**)directory_path);
-//int fd = open(pathname, O_RDONLY);
 
-
-
-//DIR *dirptr = opendir(*(char**)directory_path);
 DIR *dirptr = opendir(dirpath);
 if(dirptr==NULL){
 printf("Could not open directory: %s\t", *(char**)directory_path);
@@ -187,8 +169,8 @@ while ((direntptr = readdir(dirptr))){
 
 //If the entry is a sub directory, print name in blue
 if(direntptr->d_type==DT_DIR){
-printf("FOUND SUB DIRECTORY");
-printf("Directory Name: " LTBLUE "./%s\n"  RESETCOLOR, direntptr->d_name);
+//printf("FOUND SUB DIRECTORY");
+//printf("Directory Name: " LTBLUE "./%s\n"  RESETCOLOR, direntptr->d_name);
 
 if (strcmp(direntptr->d_name, ".") == 0 || strcmp(direntptr->d_name, "..") == 0){
 continue;
@@ -197,36 +179,28 @@ continue;
 
 
 char* pathname = appendString(dirpath, direntptr->d_name);
-//char* slash = "/";
-//slash[0]='/';
 char slash[] = "/";
 char *pathnameSlash = appendString(pathname, slash);
-printf("DIRECTORY PATHNAME: %s\n", pathnameSlash);
+//printf("DIRECTORY PATHNAME: %s\n", pathnameSlash);
 head = createThreadandStoreinLinkedList(directoryHandler, &pathnameSlash);
 free(pathname);
 free(pathnameSlash);
-//free(slash);
 continue;
 }
 
 else if (direntptr->d_type==DT_REG) {
 //if regular file, print filename in light green
- printf("Filename: " LTGREEN "%s\n" RESETCOLOR, direntptr->d_name);
+// printf("Filename: " LTGREEN "%s\n" RESETCOLOR, direntptr->d_name);
  }
   
 else{ //else print white
-   printf("Filename: " WHITE "%s\n" RESETCOLOR, direntptr->d_name);
+  // printf("Filename: " WHITE "%s\n" RESETCOLOR, direntptr->d_name);
 continue;   
 } 
 
 //will probably need to append full string here
 
 char* pathname = appendString(dirpath, direntptr->d_name);
-
-
-//char* pathname = appendString(directory_path, direntptr->d_name);
-
-//puts("here");
 //printf("\tpathname: %s\t\n", pathname);
 
 head = createThreadandStoreinLinkedList(fileHandler, &pathname);
@@ -274,8 +248,6 @@ continue;
 
 
 char* pathname = appendString(directory_path, direntptr->d_name);
-//char* slash = "/";
-//slash[0]='/';
 char slash[] = "/";
 char *pathnameSlash = appendString(pathname, slash);
 //printf("DIRECTORY PATHNAME: %s\n", pathnameSlash);
@@ -285,10 +257,8 @@ char *pathnameSlash = appendString(pathname, slash);
 printDirectoryContents(pathnameSlash);
 
 
-//head = createThreadandStoreinLinkedList(directoryHandler, &pathnameSlash);
 free(pathname);
 free(pathnameSlash);
-//free(slash);
 continue;
 }
 
