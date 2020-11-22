@@ -261,11 +261,37 @@ struct dirent *direntptr;
 //iterate through each entry in directory
 while ((direntptr = readdir(dirptr))){
 	
-	//If the entry is a sub directory, print name in blue
-	if(direntptr->d_type==DT_DIR){
-	printf("Directory Name: " LTBLUE "./%s\n"  RESETCOLOR, direntptr->d_name);
-	continue;
-	}
+	//If the entry is a sub directory, print name in blu
+	
+	
+if(direntptr->d_type==DT_DIR){
+printf("Directory Name: " LTBLUE "./%s\n"  RESETCOLOR, direntptr->d_name);
+
+if (strcmp(direntptr->d_name, ".") == 0 || strcmp(direntptr->d_name, "..") == 0){
+continue;
+}
+
+
+
+char* pathname = appendString(directory_path, direntptr->d_name);
+//char* slash = "/";
+//slash[0]='/';
+char slash[] = "/";
+char *pathnameSlash = appendString(pathname, slash);
+//printf("DIRECTORY PATHNAME: %s\n", pathnameSlash);
+
+//directoryHandler(&pathnameSlash);
+//printf("\t");
+printDirectoryContents(pathnameSlash);
+
+
+//head = createThreadandStoreinLinkedList(directoryHandler, &pathnameSlash);
+free(pathname);
+free(pathnameSlash);
+//free(slash);
+continue;
+}
+
 	
 	//check if the file is executeable, if so print in red
 	if(access(direntptr->d_name, X_OK)==0){
@@ -320,9 +346,6 @@ return 1;
 }
 
 printDirectoryContents(argv[1]);
-//char* argument = malloc(sizeof(char)*strlen(argv[1]));
-//achar* argument = argv[1];
-//char *nullterm
 
 int arg_size = strlen(argv[1]);
 char *argument = malloc(sizeof(char)*arg_size+1);
@@ -333,8 +356,7 @@ printf("argument param: %s\n", argument);
 
 
 directoryHandler(&argument);
-//char *argument = appendString(argv[1], "\0");
-//directoryHandler(argv[1]);
+
 freeAndJoinLinkedList(head);
 free(argument);
 return 0;
