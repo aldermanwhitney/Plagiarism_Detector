@@ -23,9 +23,8 @@ struct ThreadArgs{
 char *filepath;
 };
 
-
-int threadsjoined = 0;
 int threadsadded = 0;
+int threadsjoined = 0;
 
 /**Function takes values for ThreadArgs fields
  *and creates a newly malloc'ed ThreadArg struct
@@ -58,7 +57,6 @@ return threadargs;
  */
 struct ThreadNode{
 pthread_t threadID;
-char *param;
 struct ThreadArgs *args;
 struct ThreadNode *next;
 };
@@ -66,7 +64,8 @@ struct ThreadNode* head = NULL;
 
 void* fileHandler(void* ptr){
 
-struct ThreadArgs *threadargs = *(struct ThreadArgs**)ptr;	
+struct ThreadArgs *threadargs = ((struct ThreadArgs*)ptr);
+//struct ThreadArgs *threadargs = *(struct ThreadArgs**)ptr;	
 printf("thread in fileHandler, pathname3: %s\n", threadargs->filepath);
 //printf("thread in fileHandler, pathname: %s\n", *(char**)ptr);
 //printf("thread in fileHandler, pathname2: %s\n", (*(struct ThreadArgs**)ptr)->filepath);
@@ -100,7 +99,8 @@ return ptr;
  */
 struct ThreadNode* createThreadandStoreinLinkedList(void *(*start_routine) (void *), void *arg){ 
 struct ThreadNode *threadnode = malloc(sizeof(struct ThreadNode));
-
+/*
+printf("arguemnt: %s\n", (*(char**)arg));
 
 int arg_size = strlen((*(char**)arg));
 
@@ -118,33 +118,39 @@ threadnode->param = argument;
 
 
 
-/*
+
 struct ThreadArgs *threadargs = malloc(sizeof(struct ThreadArgs));
 //char *filepath = malloc(sizeof(char)*arg_size+1)
 threadargs->filepath = argument;
-*/
-//threadnode->args = threadargs;
 
+//threadnode->args = threadargs;
+*/
 
 puts("a");
-struct ThreadArgs *threadargs2 = (*(struct ThreadArgs**)arg);
-if(threadargs2==NULL){puts("null");}
-puts("here");
+
+//struct ThreadArgs threadargs3 = (*(struct ThreadArgs*)arg);
+
+
+struct ThreadArgs *threadargs3 = ((struct ThreadArgs*)arg);
+
+//struct ThreadArgs *threadargs2 = (*(struct ThreadArgs**)arg);
+//if(threadargs2==NULL){puts("null");}
+//puts("here");
 //printf("ARGS: %s\n", (threadargs2->filepath));
-threadargs2->filepath = argument;
+//threadargs2->filepath = argument;
 
-printf("thread args file path: %s\n", threadargs2->filepath);
-
+printf("thread args file path: %s\n", (threadargs3->filepath));
+threadnode->args = threadargs3;
 
 puts("b");
-threadnode->args = threadargs2;
+//threadnode->args = threadargs3;
 /*
 puts("c");
 pthread_create(&(threadnode->threadID), NULL, start_routine, &(threadargs->filepath));
 */
 
 //pthread_create(&(threadnode->threadID), NULL, start_routine, &(threadargs2->filepath));
-pthread_create(&(threadnode->threadID), NULL, start_routine, &(threadargs2));
+pthread_create(&(threadnode->threadID), NULL, start_routine, (threadargs3));
 
 //pthread_create(&(threadnode->threadID), NULL, start_routine, &(threadnode->param));
 
@@ -162,7 +168,7 @@ return threadnode;
 }
 
 void freeAndJoinLinkedList(struct ThreadNode* head){
-//puts("in free and join linked list");
+puts("in free and join linked list");
 if (head==NULL){
 return;
 }
@@ -174,7 +180,7 @@ struct ThreadNode *current = head;
 while (current!=NULL){
 //puts("before join");
 
-//printf("Thread ID: %ld", current->threadID);
+printf("Thread ID: %ld", current->threadID);
 int error = pthread_join(current->threadID, NULL);	
 if (error){
 puts("COULD NOT JOIN THREADS");
@@ -185,10 +191,10 @@ threadsjoined++;
 prev = current;
 current=current->next;
 //puts("before free");
-free(prev->param);
+/////free(prev->param);
 
-//struct ThreadArgs *threadargs = prev->args;
-//free(threadargs->filepath);
+struct ThreadArgs *threadargs = prev->args;
+free(threadargs->filepath);
 free(prev->args);
 free(prev);
 }
@@ -227,12 +233,16 @@ return newstring;
 
 
 void* directoryHandler(void* directory_path){
+puts("DIRHANDLER");
 
-struct ThreadArgs *threadargs = *(struct ThreadArgs**)directory_path;	
+struct ThreadArgs *threadargs = (struct ThreadArgs*)directory_path;
+
+
+//struct ThreadArgs *threadargs = *(struct ThreadArgs**)directory_path;	
 
 printf("thread in dirHandler, pathname3: %s\n", threadargs->filepath);
 //printf("thread in fileHandler, pathname: %s\n", *(char**)ptr);
-printf("thread in dirHandler, pathname2: %s\n", (*(struct ThreadArgs**)directory_path)->filepath);
+//printf("thread in dirHandler, pathname2: %s\n", (*(struct ThreadArgs**)directory_path)->filepath);
 
 //char* pathname = *(char**)ptr;
 //char* pathname = threadargs->filepath;
@@ -452,14 +462,15 @@ threadargs->filepath = argument;
 
 
 printf("MAIN: %s\n", threadargs->filepath);
-directoryHandler(&threadargs);
+directoryHandler(threadargs);
 
 
 
 freeAndJoinLinkedList(head);
 free(argument);
-//free(threadargs);
-
+free(threadargs);
+puts("END OF PROGRAM");
+printf("threads added: %d, threads joined: %d", threadsadded, threadsjoined);
 return 0;
 
 }
