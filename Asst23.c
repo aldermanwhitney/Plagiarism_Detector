@@ -34,22 +34,18 @@ int threadsjoined = 0;
  */
 struct ThreadArgs* createThreadArgsStruct(char *filepath){
 
+//copy file path string
 int arg_size = strlen(filepath);
-
-printf("arg size create thread arg struct: %d", arg_size);
-
 char *argument = malloc(sizeof(char)*arg_size+1);
-
 strncpy(argument, filepath, arg_size);
 argument[arg_size] = '\0';
 
-printf("argument copied in create thread arg struct: %s\n", argument);
-//athreadnode->param = argument;
+//printf("argument copied in create thread arg struct: %s\n", argument);
 
-
+//Malloc new thread arg struct and set fields
 struct ThreadArgs *threadargs = malloc(sizeof(struct ThreadArgs));
 threadargs->filepath = argument;
-printf("THREAD ARGS FP:%s", threadargs->filepath);
+//printf("THREAD ARGS FP:%s", threadargs->filepath);
 return threadargs;
 }
 
@@ -98,66 +94,21 @@ int fd = open(pathname, O_RDONLY);
 return ptr;
 }
 
-/*Creates a new thread and stores it in a newly malloced ThreadNode
+/*Function takes a void/void function and a pointer to a ThreadArg struct
+ * Creates a new thread and stores it in a newly malloced ThreadNode
  *Also adds it to a linked list for later freeing
  */
 struct ThreadNode* createThreadandStoreinLinkedList(void *(*start_routine) (void *), void *arg){ 
+
 struct ThreadNode *threadnode = malloc(sizeof(struct ThreadNode));
-/*
-printf("arguemnt: %s\n", (*(char**)arg));
 
-int arg_size = strlen((*(char**)arg));
+struct ThreadArgs *threadargs = ((struct ThreadArgs*)arg);
+printf("thread args file path: %s\n", (threadargs->filepath));
+threadnode->args = threadargs;
 
-//printf("arg size: %d", arg_size);
+pthread_create(&(threadnode->threadID), NULL, start_routine, threadargs);
 
-char *argument = malloc(sizeof(char)*arg_size+1);
-
-strncpy(argument, (*(char**)arg), arg_size);
-argument[arg_size] = '\0';
-
-//printf("argument copied: %s\n", argument);
-threadnode->param = argument;
-
-
-
-
-
-
-struct ThreadArgs *threadargs = malloc(sizeof(struct ThreadArgs));
-//char *filepath = malloc(sizeof(char)*arg_size+1)
-threadargs->filepath = argument;
-
-//threadnode->args = threadargs;
-*/
-
-puts("a");
-
-//struct ThreadArgs threadargs3 = (*(struct ThreadArgs*)arg);
-
-
-struct ThreadArgs *threadargs3 = ((struct ThreadArgs*)arg);
-
-//struct ThreadArgs *threadargs2 = (*(struct ThreadArgs**)arg);
-//if(threadargs2==NULL){puts("null");}
-//puts("here");
-//printf("ARGS: %s\n", (threadargs2->filepath));
-//threadargs2->filepath = argument;
-
-printf("thread args file path: %s\n", (threadargs3->filepath));
-threadnode->args = threadargs3;
-
-puts("b");
-//threadnode->args = threadargs3;
-/*
-puts("c");
-pthread_create(&(threadnode->threadID), NULL, start_routine, &(threadargs->filepath));
-*/
-
-//pthread_create(&(threadnode->threadID), NULL, start_routine, &(threadargs2->filepath));
-pthread_create(&(threadnode->threadID), NULL, start_routine, (threadargs3));
-
-//pthread_create(&(threadnode->threadID), NULL, start_routine, &(threadnode->param));
-
+//Add ThreadNode holding ThreadID to end of linked list
 int pos = 0;
 if(head==NULL){
 threadnode->next = NULL;
@@ -173,7 +124,6 @@ prev = curr;
 curr = curr->next;
 }
 prev->next = threadnode;
-//curr->next = threadnode;
 threadnode->next = NULL;
 }
 
@@ -182,26 +132,17 @@ printf("(thread added), position: %d\n", pos);
 threadsadded++;
 return head;
 }
-/*
-if(head!=NULL){
-threadnode->next = head;
-head = threadnode;
-}
-else{
-threadnode->next = NULL;	
-head = threadnode;
-}
-printf("(thread added)\n");
-threadsadded++;
-return threadnode;
-}
-*/
+
+
+/**Function iterates through linked list of ThreadNodes 
+ *and joins each thread, starting at the head
+ */
 void freeAndJoinLinkedList(struct ThreadNode* head){
 puts("in free and join linked list");
+
 if (head==NULL){
 return;
 }
-
 
 struct ThreadNode *prev = NULL;
 struct ThreadNode *current = head;
@@ -265,30 +206,28 @@ return newstring;
 }
 
 
+/**Thread Function
+ *Takes a pointer to a ThreadArgs struct
+ *Recursively iterates though directory and subdirectories
+ *If a new sub directory is found, a new thread is created to handle it in DirectoryHandler
+ *If a regular file is found, a new thread is created to handle it in FileHandler
+ *Returns the argument pointer
+ */
+void* directoryHandler(void* ptr){
 
-void* directoryHandler(void* directory_path){
-
-struct ThreadArgs *threadargs = (struct ThreadArgs*)directory_path;
+//cast argument as pointer to thread args
+struct ThreadArgs *threadargs = (struct ThreadArgs*)ptr;
 
 printf("thread in dirHandler, pathname: %s\n", threadargs->filepath);
-//printf("thread in fileHandler, pathname: %s\n", *(char**)ptr);
-//printf("thread in dirHandler, pathname2: %s\n", (*(struct ThreadArgs**)directory_path)->filepath);
 
-//char* pathname = *(char**)ptr;
-//char* pathname = threadargs->filepath;
+//extract necc. info
 char* dirpath = threadargs->filepath;
-
-
-
-
-//printf("thread in dirHandler, pathname: %s\n", pathname);
-//char* dirpath = (*(char**)directory_path);
 
 DIR *dirptr = opendir(dirpath);
 if(dirptr==NULL){
-printf("Could not open directory: %s\t", *(char**)directory_path);
+printf("Could not open directory: %s\t", *(char**)ptr);
 perror("error: ");
-return directory_path;
+return ptr;
 }
 
 //pointer for each entry in directory
@@ -297,17 +236,18 @@ struct dirent *direntptr;
 //iterate through each entry in directory
 while ((direntptr = readdir(dirptr))){
 
-//If the entry is a sub directory, print name in blue
+//If the entry is a sub directory, spin off a new thread to recursively inspect
 if(direntptr->d_type==DT_DIR){
 //printf("FOUND SUB DIRECTORY");
 //printf("Directory Name: " LTBLUE "./%s\n"  RESETCOLOR, direntptr->d_name);
 
+	
+//skip over any references to current or parent directory
 if (strcmp(direntptr->d_name, ".") == 0 || strcmp(direntptr->d_name, "..") == 0){
 continue;
 }
 
-
-
+//concatenate subdirectory name and slash to current directory
 char *pathname = appendString(dirpath, direntptr->d_name);
 //char slash[] = "/";
 char *slash = malloc(sizeof(char)*2);
@@ -315,13 +255,15 @@ slash[0]='/';
 slash[1]='\0';
 char *pathnameSlash = appendString(pathname, slash);
 printf("DIRECTORY PATHNAME: %s\n", pathnameSlash);
-//printf("");
-/////
+
+//create new ThreadArgsStruct out of subdirectory pathname
 struct ThreadArgs *threadargs = createThreadArgsStruct(pathnameSlash);
 
 printf("ANOTHER: %s", threadargs->filepath);
-head = createThreadandStoreinLinkedList(directoryHandler, threadargs);
-////
+
+//create a Thread to handle it, and store it in a linked list
+createThreadandStoreinLinkedList(directoryHandler, threadargs);
+
 free(slash);
 //free(threadargs);
 free(pathname);
@@ -329,42 +271,25 @@ free(pathnameSlash);
 continue;
 }
 
-else if (direntptr->d_type==DT_REG) {
-//if regular file, print filename in light green
+//Found a regular file, spin off new thread with this file in filehandler function
+if (direntptr->d_type==DT_REG) {
 // printf("Filename: " LTGREEN "%s\n" RESETCOLOR, direntptr->d_name);
- }
-  
-else{ //else print white
-  // printf("Filename: " WHITE "%s\n" RESETCOLOR, direntptr->d_name);
-continue;   
-} 
-
-//will probably need to append full string here
 
 char* pathname = appendString(dirpath, direntptr->d_name);
 //printf("\tpathname: %s\t\n", pathname);
 
-//head = createThreadandStoreinLinkedList(fileHandler, &pathname);
 
-
-/////
 struct ThreadArgs *threadargs = createThreadArgsStruct(pathname);
-head = createThreadandStoreinLinkedList(fileHandler, threadargs);
-////
+createThreadandStoreinLinkedList(fileHandler, threadargs);
 
-
-
-
-if(head==NULL){
-
-}
 free(pathname);
-//free(threadargs);
 
 }
+}
+
 closedir(dirptr);	
 
-return directory_path;
+return ptr;
 }
 
 /**Prints Directory
@@ -499,6 +424,6 @@ free(threadargs);
 puts("END OF PROGRAM");
 
 printf("threads added: %d, threads joined: %d", threadsadded, threadsjoined);
-puts("here");
+puts("\nhere");
 return 0;
 }
