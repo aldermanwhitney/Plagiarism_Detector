@@ -19,10 +19,25 @@
 
 //static pthread_mutex_t threadLLmut = PTHREAD_MUTEX_INITIALIZER;
 
+struct TokenNode{
+char *token;
+double probability;
+struct TokenNode *next;
+};
+
+struct FileNode{
+char *filepath;
+int num_tokens;
+struct TokenNode *nexttoken;
+struct FileNode *nextfile;
+};
+
+
 /**Struct to hold arguments needed by threads
  */
 struct ThreadArgs{
 char *filepath;
+pthread_mutex_t *lockptr;
 };
 
 int threadsadded = 0;
@@ -227,6 +242,7 @@ DIR *dirptr = opendir(dirpath);
 if(dirptr==NULL){
 printf("Could not open directory: %s\t", *(char**)ptr);
 perror("error: ");
+//freeAndJoinLinkedList(head);
 return ptr;
 }
 
@@ -289,6 +305,7 @@ free(pathname);
 
 closedir(dirptr);	
 
+//freeAndJoinLinkedList(head);
 return ptr;
 }
 
