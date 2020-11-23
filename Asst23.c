@@ -19,6 +19,8 @@
 
 //static pthread_mutex_t threadLLmut = PTHREAD_MUTEX_INITIALIZER;
 
+/**Struct to hold arguments needed by threads
+ */
 struct ThreadArgs{
 char *filepath;
 };
@@ -62,21 +64,23 @@ struct ThreadNode *next;
 };
 struct ThreadNode* head = NULL;
 
+
+
+/**Function takes a pointer to a thread arg struct as a void pointer
+ *handles file operations, and returns the same pointer
+ */
 void* fileHandler(void* ptr){
 
 struct ThreadArgs *threadargs = ((struct ThreadArgs*)ptr);
-//struct ThreadArgs *threadargs = *(struct ThreadArgs**)ptr;	
-printf("thread in fileHandler, pathname3: %s\n", threadargs->filepath);
-//printf("thread in fileHandler, pathname: %s\n", *(char**)ptr);
-//printf("thread in fileHandler, pathname2: %s\n", (*(struct ThreadArgs**)ptr)->filepath);
 
-//char* pathname = *(char**)ptr;
+printf("thread in fileHandler, pathname3: %s\n", threadargs->filepath);
+
 char* pathname = threadargs->filepath;
 int fd = open(pathname, O_RDONLY);
 
    //take care of case where open returns -1
    if(fd<0){
-   perror("Line 40: Could not open file\n");
+   perror("Line 83: Could not open file\n");
    }
 
    off_t bytesread = lseek(fd,0, SEEK_END);
@@ -154,6 +158,31 @@ pthread_create(&(threadnode->threadID), NULL, start_routine, (threadargs3));
 
 //pthread_create(&(threadnode->threadID), NULL, start_routine, &(threadnode->param));
 
+int pos = 0;
+if(head==NULL){
+threadnode->next = NULL;
+head = threadnode;
+}
+else{
+struct ThreadNode *curr = head;
+struct ThreadNode *prev = NULL;
+
+while(curr!=NULL){
+pos++;
+prev = curr;
+curr = curr->next;
+}
+prev->next = threadnode;
+//curr->next = threadnode;
+threadnode->next = NULL;
+}
+
+
+printf("(thread added), position: %d\n", pos);
+threadsadded++;
+return head;
+}
+/*
 if(head!=NULL){
 threadnode->next = head;
 head = threadnode;
@@ -166,7 +195,7 @@ printf("(thread added)\n");
 threadsadded++;
 return threadnode;
 }
-
+*/
 void freeAndJoinLinkedList(struct ThreadNode* head){
 puts("in free and join linked list");
 if (head==NULL){
@@ -176,6 +205,8 @@ return;
 
 struct ThreadNode *prev = NULL;
 struct ThreadNode *current = head;
+
+if(prev){}
 
 while (current!=NULL){
 //puts("before join");
@@ -189,14 +220,17 @@ printf("(thread joined)\n");
 threadsjoined++;
 //puts("before pointer change");
 prev = current;
+
 current=current->next;
+//head = current;
 //puts("before free");
 /////free(prev->param);
-
+/*
 struct ThreadArgs *threadargs = prev->args;
 free(threadargs->filepath);
 free(prev->args);
 free(prev);
+*/
 }
 	
 }
@@ -233,14 +267,10 @@ return newstring;
 
 
 void* directoryHandler(void* directory_path){
-puts("DIRHANDLER");
 
 struct ThreadArgs *threadargs = (struct ThreadArgs*)directory_path;
 
-
-//struct ThreadArgs *threadargs = *(struct ThreadArgs**)directory_path;	
-
-printf("thread in dirHandler, pathname3: %s\n", threadargs->filepath);
+printf("thread in dirHandler, pathname: %s\n", threadargs->filepath);
 //printf("thread in fileHandler, pathname: %s\n", *(char**)ptr);
 //printf("thread in dirHandler, pathname2: %s\n", (*(struct ThreadArgs**)directory_path)->filepath);
 
@@ -439,11 +469,6 @@ return 1;
 
 printDirectoryContents(argv[1]);
 
-//char *string1 = "/ilab/users/wa125/cs214/asst2testcases/directory2";
-//char *string2 = "/";
-//appendString(string1, string2);
-
-
 int arg_size = strlen(argv[1]);
 char *argument = malloc(sizeof(char)*arg_size+1);
 strncpy(argument, argv[1], arg_size);
@@ -457,20 +482,23 @@ printf("argument param: %s\n", argument);
 
 //struct ThreadArgs *threadargs = createThreadArgsStruct(argument);
 
+//create first thread arg struct to send initial directory argument in
 struct ThreadArgs *threadargs = malloc(sizeof(struct ThreadArgs));
 threadargs->filepath = argument;
+//threadargs->filepath = argv[1]; this works too
 
-
-printf("MAIN: %s\n", threadargs->filepath);
 directoryHandler(threadargs);
 
+
+//directoryHandler(&argv[1]);
 
 
 freeAndJoinLinkedList(head);
 free(argument);
 free(threadargs);
 puts("END OF PROGRAM");
-printf("threads added: %d, threads joined: %d", threadsadded, threadsjoined);
-return 0;
 
+printf("threads added: %d, threads joined: %d", threadsadded, threadsjoined);
+puts("here");
+return 0;
 }
