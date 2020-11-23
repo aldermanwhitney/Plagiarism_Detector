@@ -19,20 +19,57 @@
 
 //static pthread_mutex_t threadLLmut = PTHREAD_MUTEX_INITIALIZER;
 
+struct ThreadArgs{
+char *filepath;
+};
+
+
+/**Function takes values for ThreadArgs fields
+ *and creates a newly malloc'ed ThreadArg struct
+ returns pointer to it
+ */
+struct ThreadArgs* createThreadArgsStruct(char *filepath){
+
+int arg_size = strlen(filepath);
+
+printf("arg size create thread arg struct: %d", arg_size);
+
+char *argument = malloc(sizeof(char)*arg_size+1);
+
+strncpy(argument, filepath, arg_size);
+argument[arg_size] = '\0';
+
+printf("argument copied in create thread arg struct: %s\n", argument);
+//athreadnode->param = argument;
+
+
+struct ThreadArgs *threadargs = malloc(sizeof(struct ThreadArgs));
+threadargs->filepath = argument;
+printf("THREAD ARGS FP:%s", threadargs->filepath);
+return threadargs;
+}
+
+
 /**Linked List to keep track of threads in use
  * Used for properly joining all threads
  */
 struct ThreadNode{
 pthread_t threadID;
 char *param;
+struct ThreadArgs *args;
 struct ThreadNode *next;
 };
 struct ThreadNode* head = NULL;
 
-
 void* fileHandler(void* ptr){
-printf("thread in fileHandler, pathname: %s\n", *(char**)ptr);
-char* pathname = *(char**)ptr;
+
+struct ThreadArgs *threadargs = *(struct ThreadArgs**)ptr;	
+printf("thread in fileHandler, pathname3: %s\n", threadargs->filepath);
+//printf("thread in fileHandler, pathname: %s\n", *(char**)ptr);
+//printf("thread in fileHandler, pathname2: %s\n", (*(struct ThreadArgs**)ptr)->filepath);
+
+//char* pathname = *(char**)ptr;
+char* pathname = threadargs->filepath;
 int fd = open(pathname, O_RDONLY);
 
    //take care of case where open returns -1
@@ -60,7 +97,7 @@ return ptr;
  */
 struct ThreadNode* createThreadandStoreinLinkedList(void *(*start_routine) (void *), void *arg){ 
 struct ThreadNode *threadnode = malloc(sizeof(struct ThreadNode));
-//printf("arguemnt: %s\n", (*(char**)arg));
+
 
 int arg_size = strlen((*(char**)arg));
 
@@ -74,7 +111,39 @@ argument[arg_size] = '\0';
 //printf("argument copied: %s\n", argument);
 threadnode->param = argument;
 
-pthread_create(&(threadnode->threadID), NULL, start_routine, &(threadnode->param));
+
+
+
+
+/*
+struct ThreadArgs *threadargs = malloc(sizeof(struct ThreadArgs));
+//char *filepath = malloc(sizeof(char)*arg_size+1)
+threadargs->filepath = argument;
+*/
+//threadnode->args = threadargs;
+
+
+puts("a");
+struct ThreadArgs *threadargs2 = (*(struct ThreadArgs**)arg);
+if(threadargs2==NULL){puts("null");}
+puts("here");
+//printf("ARGS: %s\n", (threadargs2->filepath));
+threadargs2->filepath = argument;
+
+printf("thread args file path: %s\n", threadargs2->filepath);
+
+
+puts("b");
+threadnode->args = threadargs2;
+/*
+puts("c");
+pthread_create(&(threadnode->threadID), NULL, start_routine, &(threadargs->filepath));
+*/
+
+//pthread_create(&(threadnode->threadID), NULL, start_routine, &(threadargs2->filepath));
+pthread_create(&(threadnode->threadID), NULL, start_routine, &(threadargs2));
+
+//pthread_create(&(threadnode->threadID), NULL, start_routine, &(threadnode->param));
 
 if(head!=NULL){
 threadnode->next = head;
@@ -113,6 +182,10 @@ prev = current;
 current=current->next;
 //puts("before free");
 free(prev->param);
+
+//struct ThreadArgs *threadargs = prev->args;
+//free(threadargs->filepath);
+free(prev->args);
 free(prev);
 }
 	
@@ -128,7 +201,7 @@ int space_needed = strlen(string1) + strlen(string2) + 1;
 
 int string1_space = strlen(string1);
 int string2_space = strlen(string2);
-//printf("here, space needed: %i\n", space_needed);
+//printf("append string, space needed: %i, str1: %s str2: %s\n", space_needed, string1, string2);
 char* newstring = malloc(space_needed);
 
 
@@ -151,8 +224,21 @@ return newstring;
 
 void* directoryHandler(void* directory_path){
 
-printf("thread in dirHandler, pathname: %s\n", *(char**)directory_path);
-char* dirpath = (*(char**)directory_path);
+struct ThreadArgs *threadargs = *(struct ThreadArgs**)directory_path;	
+
+printf("thread in dirHandler, pathname3: %s\n", threadargs->filepath);
+//printf("thread in fileHandler, pathname: %s\n", *(char**)ptr);
+printf("thread in dirHandler, pathname2: %s\n", (*(struct ThreadArgs**)directory_path)->filepath);
+
+//char* pathname = *(char**)ptr;
+//char* pathname = threadargs->filepath;
+char* dirpath = threadargs->filepath;
+
+
+
+
+//printf("thread in dirHandler, pathname: %s\n", pathname);
+//char* dirpath = (*(char**)directory_path);
 
 DIR *dirptr = opendir(dirpath);
 if(dirptr==NULL){
@@ -178,11 +264,22 @@ continue;
 
 
 
-char* pathname = appendString(dirpath, direntptr->d_name);
-char slash[] = "/";
+char *pathname = appendString(dirpath, direntptr->d_name);
+//char slash[] = "/";
+char *slash = malloc(sizeof(char)*2);
+slash[0]='/';
+slash[1]='\0';
 char *pathnameSlash = appendString(pathname, slash);
-//printf("DIRECTORY PATHNAME: %s\n", pathnameSlash);
-head = createThreadandStoreinLinkedList(directoryHandler, &pathnameSlash);
+printf("DIRECTORY PATHNAME: %s\n", pathnameSlash);
+//printf("");
+/////
+struct ThreadArgs *threadargs = createThreadArgsStruct(pathnameSlash);
+
+printf("ANOTHER: %s", threadargs->filepath);
+head = createThreadandStoreinLinkedList(directoryHandler, threadargs);
+////
+free(slash);
+//free(threadargs);
 free(pathname);
 free(pathnameSlash);
 continue;
@@ -203,12 +300,23 @@ continue;
 char* pathname = appendString(dirpath, direntptr->d_name);
 //printf("\tpathname: %s\t\n", pathname);
 
-head = createThreadandStoreinLinkedList(fileHandler, &pathname);
+//head = createThreadandStoreinLinkedList(fileHandler, &pathname);
+
+
+/////
+struct ThreadArgs *threadargs = createThreadArgsStruct(pathname);
+head = createThreadandStoreinLinkedList(fileHandler, threadargs);
+////
+
+
+
 
 if(head==NULL){
 
 }
 free(pathname);
+//free(threadargs);
+
 }
 closedir(dirptr);	
 
@@ -317,6 +425,11 @@ return 1;
 
 printDirectoryContents(argv[1]);
 
+//char *string1 = "/ilab/users/wa125/cs214/asst2testcases/directory2";
+//char *string2 = "/";
+//appendString(string1, string2);
+
+
 int arg_size = strlen(argv[1]);
 char *argument = malloc(sizeof(char)*arg_size+1);
 strncpy(argument, argv[1], arg_size);
@@ -325,10 +438,24 @@ argument[arg_size] = '\0';
 printf("argument param: %s\n", argument);
 
 
-directoryHandler(&argument);
+//directoryHandler(&argument);
+
+
+//struct ThreadArgs *threadargs = createThreadArgsStruct(argument);
+
+struct ThreadArgs *threadargs = malloc(sizeof(struct ThreadArgs));
+threadargs->filepath = argument;
+
+
+printf("MAIN: %s\n", threadargs->filepath);
+directoryHandler(&threadargs);
+
+
 
 freeAndJoinLinkedList(head);
 free(argument);
+//free(threadargs);
+
 return 0;
 
 }
