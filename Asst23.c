@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <pthread.h>
+#include <ctype.h>
 
 #define LTBLUE "\x1B[38;5;33m"
 #define LTGREEN "\x1B[38;5;48m"
@@ -32,13 +33,153 @@ struct TokenNode *nexttoken;
 struct FileNode *nextfile;
 };
 
+struct FileNode *filehead = NULL;
+
+
+struct TokenNode* createTokenNode(char *token){
+struct TokenNode *tokennode = malloc(sizeof(struct TokenNode));
+tokennode->token = token;
+tokennode-> probability = 0;
+tokennode-> next = NULL;
+return tokennode;	
+}
+
+void addTokenNodetoLL(struct TokenNode *tokennode, struct FileNode *filenode){
+/*
+if((*headptr)==NULL){
+printf("head is null %s\n", filenode->filepath);
+////headptr = &filenode;
+/////// *headptr = filenode;
+return;
+}
+*/	
+	
+
+if(filenode==NULL){
+printf("Attempted to add token node to null file node");
+return;
+}
+
+
+//case where file node has no token nodes yet
+if(filenode->nexttoken==NULL){
+filenode->nexttoken = tokennode;
+return;
+}
+
+struct TokenNode *curr = filenode->nexttoken;
+struct TokenNode *prev = NULL;
+
+while(curr!=NULL){
+prev = curr;
+curr = curr->next;
+}
+prev->next = tokennode;
+
+return;	
+}
+
+
+
+struct FileNode* createFileNode(char *filepath){
+
+struct FileNode *filenode = malloc(sizeof(struct FileNode));
+filenode->filepath = filepath;
+filenode->num_tokens = 0;
+filenode->nexttoken = NULL;
+filenode->nextfile = NULL;
+
+return filenode;
+}
+
+
+
+void addFileNodetoLL(struct FileNode *filenode, struct FileNode **headptr){
+
+//printf("filenode filepath: %s", filenode->filepath);
+
+if((*headptr)==NULL){
+printf("head is null %s\n", filenode->filepath);
+////headptr = &filenode;
+*headptr = filenode;
+return;
+}
+
+//printf("headptr filepath: %s", (*headptr)->filepath);
+
+struct FileNode *curr = *headptr;
+struct FileNode *prev = NULL;
+//printf("HERE 2 %s", filenode->filepath);
+
+//printf("curr filepath: %s", curr->filepath);
+while(curr!=NULL){
+puts("loop");
+prev = curr;
+curr = curr->nextfile;
+}
+prev->nextfile = filenode;
+
+return;	
+}
+
+void printFileNodeLL(struct FileNode **headptr){
+
+if((*headptr)==NULL){
+printf("attempt to print LL: head points to null\n");
+return;
+}
+
+	
+/*	
+if (filehead==NULL){
+printf("filehead is null");
+return;
+}
+
+struct FileNode *curr = filehead;
+struct TokenNode *currtok;
+*/
+
+
+struct FileNode *curr = *headptr;
+struct TokenNode *currtok;
+
+
+int filecount = 0;
+while(curr!=NULL){
+printf("____________________________\n");
+printf("filepath: %s\n", curr->filepath);	
+printf("numTokens: %d\n", curr->num_tokens);
+
+currtok = curr->nexttoken;
+while(currtok!=NULL){
+printf("\t-->| token: %s", currtok->token);
+//printf("\t probability: %f|", currtok->probability);
+currtok = currtok->next;
+}
+
+
+printf("____________________________\n");
+printf("\t\t\t|\n");
+printf("\t\t\tv\n");
+filecount++;
+curr = curr->nextfile;
+}
+printf("NULL\n");
+printf("files in linked list: %d", filecount);
+
+}
+
+
+
+
 
 /**Struct to hold arguments needed by threads
  */
 struct ThreadArgs{
 char *filepath;
 pthread_mutex_t *lockptr;
-struct FileNode **head;
+struct FileNode **headptr;
 };
 
 int threadsadded = 0;
@@ -48,7 +189,7 @@ int threadsjoined = 0;
  *and creates a newly malloc'ed ThreadArg struct
  returns pointer to it
  */
-struct ThreadArgs* createThreadArgsStruct(char *filepath){
+struct ThreadArgs* createThreadArgsStruct(char *filepath, pthread_mutex_t *lockptr, struct FileNode **headptr){
 
 //copy file path string
 int arg_size = strlen(filepath);
@@ -62,6 +203,8 @@ argument[arg_size] = '\0';
 struct ThreadArgs *threadargs = malloc(sizeof(struct ThreadArgs));
 threadargs->filepath = argument;
 //printf("THREAD ARGS FP:%s", threadargs->filepath);
+threadargs->lockptr = lockptr;
+threadargs->headptr = headptr;
 return threadargs;
 }
 
@@ -88,6 +231,10 @@ struct ThreadArgs *threadargs = ((struct ThreadArgs*)ptr);
 printf("thread in fileHandler, pathname3: %s\n", threadargs->filepath);
 
 char* pathname = threadargs->filepath;
+pthread_mutex_t *lockptr = threadargs->lockptr;
+struct FileNode **headptr = threadargs->headptr;
+
+
 int fd = open(pathname, O_RDONLY);
 
    //take care of case where open returns -1
@@ -95,30 +242,52 @@ int fd = open(pathname, O_RDONLY);
    perror("Line 83: Could not open file\n");
    }
 
+//lock access of shared data structure: FileNodes Linked List
+pthread_mutex_lock(lockptr);  
+struct FileNode *filenode = createFileNode(pathname);   
+addFileNodetoLL(filenode, headptr);
+//printFileNodeLL();
+////pthread_mutex_unlock(lockptr);
+
+//read one token to the buffer at a time
+//tokenize the token, then read next token to the buffer
+
+
+//read as much as possible into the buffer
+//tokenize token
+//again read as much as possible into the buffer   
+//from offset
+
 int buffersize = 1000;
 char buf[buffersize];
 int bytesread;
 int position;
 int totalRead = 0;
 
-while((bytesread = read(fd, buf, buffersize)>0)){
-printf("read %d bytes\n", bytesread);
+//read into buffer byte by byte, ie, char by char
+while((bytesread = read(fd, buf, buffersize))>0){
+//printf("read %d bytes\n", bytesread);
 totalRead+=bytesread;
 
-printf("s: %s\n", buf);
+//printf("s: %s\n", buf);
 //write(STDOUT_FILENO, buf, totalRead);
 for(position=0; position<bytesread; position++){
 //write(STDOUT_FILENO, buf, 80);
+if(isspace(buf[position])){
+//printf("space\n");
+}
+}
 
 }
 
+struct TokenNode *tokennode = createTokenNode(buf);   
+addTokenNodetoLL(tokennode, filenode);
+//printFileNodeLL();
 
 
-
-}
-
+pthread_mutex_unlock(lockptr);
 //write(STDOUT_FILENO, buf, totalRead);
-//printf("total bytes read: %d\n", totalRead);
+////printf("total bytes read: %d\n", totalRead);
 //printf("s: %s\n", buf);
 
 /*
@@ -184,7 +353,7 @@ return head;
  *and joins each thread, starting at the head
  */
 void freeAndJoinLinkedList(struct ThreadNode* head){
-puts("in free and join linked list");
+////puts("in free and join linked list");
 
 if (head==NULL){
 return;
@@ -198,12 +367,12 @@ if(prev){}
 while (current!=NULL){
 //puts("before join");
 
-printf("Thread ID: %ld", current->threadID);
+////printf("Thread ID: %ld", current->threadID);
 int error = pthread_join(current->threadID, NULL);	
 if (error){
 puts("COULD NOT JOIN THREADS");
 }
-printf("(thread joined)\n");
+////printf("(thread joined)\n");
 threadsjoined++;
 //puts("before pointer change");
 prev = current;
@@ -268,6 +437,8 @@ struct ThreadArgs *threadargs = (struct ThreadArgs*)ptr;
 
 //extract necc. info
 char* dirpath = threadargs->filepath;
+pthread_mutex_t *lockptr = threadargs->lockptr;
+struct FileNode **headptr = threadargs->headptr;
 
 DIR *dirptr = opendir(dirpath);
 if(dirptr==NULL){
@@ -304,7 +475,7 @@ char *pathnameSlash = appendString(pathname, slash);
 //printf("DIRECTORY PATHNAME: %s\n", pathnameSlash);
 
 //create new ThreadArgsStruct out of subdirectory pathname
-struct ThreadArgs *threadargs = createThreadArgsStruct(pathnameSlash);
+struct ThreadArgs *threadargs = createThreadArgsStruct(pathnameSlash, lockptr, headptr);
 
 //printf("ANOTHER: %s", threadargs->filepath);
 
@@ -326,7 +497,7 @@ char* pathname = appendString(dirpath, direntptr->d_name);
 //printf("\tpathname: %s\t\n", pathname);
 
 
-struct ThreadArgs *threadargs = createThreadArgsStruct(pathname);
+struct ThreadArgs *threadargs = createThreadArgsStruct(pathname, lockptr, headptr);
 createThreadandStoreinLinkedList(fileHandler, threadargs);
 
 free(pathname);
@@ -442,6 +613,13 @@ return 1;
 
 printDirectoryContents(argv[1]);
 
+pthread_mutex_t *lock = malloc(sizeof(pthread_mutex_t));
+pthread_mutex_init(lock, NULL);
+
+//struct FileNode *headptr = malloc(sizeof(struct FileNode*));
+struct FileNode *headptr = NULL;
+//headptr = NULL;
+
 int arg_size = strlen(argv[1]);
 char *argument = malloc(sizeof(char)*arg_size+1);
 strncpy(argument, argv[1], arg_size);
@@ -458,6 +636,8 @@ printf("argument param: %s\n", argument);
 //create first thread arg struct to send initial directory argument in
 struct ThreadArgs *threadargs = malloc(sizeof(struct ThreadArgs));
 threadargs->filepath = argument;
+threadargs->lockptr = lock;
+threadargs->headptr = &headptr;
 //threadargs->filepath = argv[1]; this works too
 
 directoryHandler(threadargs);
@@ -466,6 +646,7 @@ directoryHandler(threadargs);
 //directoryHandler(&argv[1]);
 
 
+printFileNodeLL((&headptr));
 freeAndJoinLinkedList(head);
 free(argument);
 free(threadargs);
