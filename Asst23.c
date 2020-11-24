@@ -38,6 +38,7 @@ struct FileNode *nextfile;
 struct ThreadArgs{
 char *filepath;
 pthread_mutex_t *lockptr;
+struct FileNode **head;
 };
 
 int threadsadded = 0;
@@ -94,6 +95,33 @@ int fd = open(pathname, O_RDONLY);
    perror("Line 83: Could not open file\n");
    }
 
+int buffersize = 1000;
+char buf[buffersize];
+int bytesread;
+int position;
+int totalRead = 0;
+
+while((bytesread = read(fd, buf, buffersize)>0)){
+printf("read %d bytes\n", bytesread);
+totalRead+=bytesread;
+
+printf("s: %s\n", buf);
+//write(STDOUT_FILENO, buf, totalRead);
+for(position=0; position<bytesread; position++){
+//write(STDOUT_FILENO, buf, 80);
+
+}
+
+
+
+
+}
+
+//write(STDOUT_FILENO, buf, totalRead);
+//printf("total bytes read: %d\n", totalRead);
+//printf("s: %s\n", buf);
+
+/*
    off_t bytesread = lseek(fd,0, SEEK_END);
 
    //Take care of case where lseek returns -1
@@ -103,6 +131,9 @@ int fd = open(pathname, O_RDONLY);
    else{
    printf("  size: %li\n", bytesread);
    }
+*/
+
+
    close(fd);
   
 
@@ -118,7 +149,7 @@ struct ThreadNode* createThreadandStoreinLinkedList(void *(*start_routine) (void
 struct ThreadNode *threadnode = malloc(sizeof(struct ThreadNode));
 
 struct ThreadArgs *threadargs = ((struct ThreadArgs*)arg);
-printf("thread args file path: %s\n", (threadargs->filepath));
+//printf("thread args file path: %s\n", (threadargs->filepath));
 threadnode->args = threadargs;
 
 pthread_create(&(threadnode->threadID), NULL, start_routine, threadargs);
@@ -143,7 +174,7 @@ threadnode->next = NULL;
 }
 
 
-printf("(thread added), position: %d\n", pos);
+//printf("(thread added), position: %d\n", pos);
 threadsadded++;
 return head;
 }
@@ -233,7 +264,7 @@ void* directoryHandler(void* ptr){
 //cast argument as pointer to thread args
 struct ThreadArgs *threadargs = (struct ThreadArgs*)ptr;
 
-printf("thread in dirHandler, pathname: %s\n", threadargs->filepath);
+//printf("thread in dirHandler, pathname: %s\n", threadargs->filepath);
 
 //extract necc. info
 char* dirpath = threadargs->filepath;
@@ -270,12 +301,12 @@ char *slash = malloc(sizeof(char)*2);
 slash[0]='/';
 slash[1]='\0';
 char *pathnameSlash = appendString(pathname, slash);
-printf("DIRECTORY PATHNAME: %s\n", pathnameSlash);
+//printf("DIRECTORY PATHNAME: %s\n", pathnameSlash);
 
 //create new ThreadArgsStruct out of subdirectory pathname
 struct ThreadArgs *threadargs = createThreadArgsStruct(pathnameSlash);
 
-printf("ANOTHER: %s", threadargs->filepath);
+//printf("ANOTHER: %s", threadargs->filepath);
 
 //create a Thread to handle it, and store it in a linked list
 createThreadandStoreinLinkedList(directoryHandler, threadargs);
