@@ -23,6 +23,7 @@
 struct TokenNode{
 char *token;
 double probability;
+int numOccurances;
 int size;
 struct TokenNode *next;
 };
@@ -52,29 +53,70 @@ struct TokenNode *tokennode = malloc(sizeof(struct TokenNode));
 tokennode->token = argument;
 tokennode-> probability = 0;
 tokennode-> next = NULL;
-tokennode->size = 0;
 tokennode->size = arg_size;
+tokennode->numOccurances = 1;
 
 free(token);
 return tokennode;	
 }
 
-void addTokenNodetoLL(struct TokenNode *tokennode, struct FileNode *filenode){
-/*
-if((*headptr)==NULL){
-printf("head is null %s\n", filenode->filepath);
-////headptr = &filenode;
-/////// *headptr = filenode;
-return;
-}
-*/	
-	
 
+/**Function compares two tokens alphabetically
+ *Returns -1 if token1 should after  token2
+ Returns 0 if they are equal
+ Returns 1 if token2 should come after token1
+ */
+int compare(char *token1, char *token2){
+
+int defaultValue = 0;
+int smallestSize;
+
+//Compare lengths to order shorter words before longer words (ie, an before and)
+if(strlen(token1)<strlen(token2)){
+smallestSize = strlen(token1);
+defaultValue = 1;
+}
+else if(strlen(token2)<strlen(token1)){
+smallestSize = strlen(token2);
+defaultValue = -1;
+}
+else{
+smallestSize = strlen(token2);
+defaultValue = 0;
+}
+
+//printf("compare %s <-> %s defaultValue:%d \n", token1, token2, defaultValue);
+for(int i=0; i<smallestSize; i++){
+	
+if(token1[i]<token2[i]){
+
+printf("compare %s <-> %s defaultValue:%d return 1 \n", token1, token2, defaultValue);
+//puts("compare finished");
+return 1;
+}
+if(token1[i]>token2[i]){
+
+printf("compare %s <-> %s defaultValue:%d return -1\n", token1, token2, defaultValue);
+//puts("compare finished");
+return -1;
+}
+
+
+}
+
+
+printf("compare %s <-> %s defaultValue:%d  return 0 \n", token1, token2, defaultValue);
+return defaultValue;	
+}
+
+
+
+void addTokenNodetoLL(struct TokenNode *tokennode, struct FileNode *filenode){
+	
 if(filenode==NULL){
 printf("Attempted to add token node to null file node");
 return;
 }
-
 
 //case where file node has no token nodes yet
 if(filenode->nexttoken==NULL){
@@ -86,14 +128,36 @@ struct TokenNode *curr = filenode->nexttoken;
 struct TokenNode *prev = NULL;
 
 while(curr!=NULL){
+
+//token to insert must be inserted here
+if(compare((curr->token), (tokennode->token))==-1){
+
+if(prev!=NULL){
+tokennode->next = curr;
+prev->next = tokennode;
+return;	
+}
+else{
+tokennode->next = curr;
+filenode->nexttoken = tokennode;
+return;
+}
+}
+
+//found the same token
+if(compare((curr->token), (tokennode->token))==0){
+
+curr->numOccurances = (curr->numOccurances) + 1;
+return;
+}	
+	
 prev = curr;
 curr = curr->next;
 }
 prev->next = tokennode;
-
+puts("NO ORDERING");
 return;	
 }
-
 
 
 struct FileNode* createFileNode(char *filepath){
@@ -164,12 +228,50 @@ while(curr!=NULL){
 printf("____________________________\n");
 printf("filepath: %s\n", curr->filepath);	
 printf("numTokens: %d\n", curr->num_tokens);
+
+
+int fd = open(curr->filepath, O_RDONLY);
+
+   //take care of case where open returns -1
+   if(fd<0){
+   perror("Line 83: Could not open file\n");
+   }
+
+
+   off_t bytesInFile = lseek(fd,0, SEEK_END);
+	
+   //return to beggining of file
+   lseek(fd, 0, SEEK_SET);
+   //Take care of case where lseek returns -1
+   if(bytesInFile==-1){
+   printf("Could not read file\n");
+   }
+   else{
+   printf("  size: %li\n", bytesInFile);
+   }
+
+
+int buffersize = 200;
+char buf[buffersize];
+int bytesread;
+
+while((bytesread = read(fd, buf, 200))>0){
+printf("read %d bytes. \nText in File:\n\n %s\n", bytesread, buf);
+}
+
+close(fd);
+
+
+
+
+
+
 currtok = curr->nexttoken;
 while(currtok!=NULL){
 printf("\t\n-->| token: %s", currtok->token);
 printf("\t probability: %f|", currtok->probability);
 printf("\t size: %d|", currtok->size);
-
+printf("\t Number of Occurances: %d|", currtok->numOccurances);
 currtok = currtok->next;
 }
 
@@ -371,7 +473,7 @@ pthread_mutex_lock(lockptr);
 struct FileNode *filenode = createFileNode(pathname);   
 addFileNodetoLL(filenode, headptr);
 //printFileNodeLL();
-pthread_mutex_unlock(lockptr);
+////pthread_mutex_unlock(lockptr);
 
 //read one token to the buffer at a time
 //tokenize the token, then read next token to the buffer
@@ -457,90 +559,9 @@ i++;
 
 }
 
-/*
-
-//read into buffer 10 bytes at a time
-while((bytesread = read(fd, buf, amountToRead))>0){
-printf("read %d bytes. Buffer: %s\n", bytesread, buf);
-totalRead+=bytesread;
-
-
-//iterate through buffer char by char to tokenize
-int tokensize = 0;
-int begintoken = 0;
-int i = 0;
-while(i<bytesread){
-//for(int i=0; i<bytesread; i++){	
-//if the last character read is not whitespace, rollback next read to include it	
-if(!isspace(buf[i]) && (i==bytesread-1)){
-tokensize++;
-int fileposition = totalRead - tokensize - 1;
-//rewind pointer to begging of token
-lseek(fd, fileposition, SEEK_SET);
-break;
-}
-//if reached an alphabetical char, make lowercase
-else if(isalpha(buf[i])){
-buf[i]=tolower(buf[i]);
-tokensize++;
-i++;
-}
-//if white space reached and not at beginning of position, tokenize previous	
-else if(isspace(buf[i]) && (i!=0)){
-
-//need a substring method!
-char *token = substring(buf, begintoken, i-1);
-printf("Token: %s\n", token);
-struct TokenNode *tokennode = createTokenNode(token);   
-addTokenNodetoLL(tokennode, filenode);
-tokensize=0;
-begintoken = i+1;
-i++;
-//printf("space\n");
-}
-else if(isspace(buf[i])){
-begintoken=i+1;
-i++;
-}
-//reached something that should not be included in the token
-else{
-buf[i]='X';
-tokensize++;
-i++;
-}
-
-}
-
-}
-*/
-////struct TokenNode *tokennode = createTokenNode(buf);   
-////addTokenNodetoLL(tokennode, filenode);
-
-
-//printFileNodeLL();
-
-
-//pthread_mutex_unlock(lockptr);
-//write(STDOUT_FILENO, buf, totalRead);
-////printf("total bytes read: %d\n", totalRead);
-//printf("s: %s\n", buf);
-
-/*
-   off_t bytesread = lseek(fd,0, SEEK_END);
-
-   //Take care of case where lseek returns -1
-   if(bytesread==-1){
-   printf("Could not read file\n");
-   }
-   else{
-   printf("  size: %li\n", bytesread);
-   }
-*/
-
-
    close(fd);
   
-////pthread_mutex_unlock(lockptr);
+pthread_mutex_unlock(lockptr);
 
 return ptr;
 }
