@@ -23,6 +23,7 @@
 struct TokenNode{
 char *token;
 double probability;
+int size;
 struct TokenNode *next;
 };
 
@@ -51,6 +52,10 @@ struct TokenNode *tokennode = malloc(sizeof(struct TokenNode));
 tokennode->token = argument;
 tokennode-> probability = 0;
 tokennode-> next = NULL;
+tokennode->size = 0;
+tokennode->size = arg_size;
+
+free(token);
 return tokennode;	
 }
 
@@ -161,8 +166,9 @@ printf("filepath: %s\n", curr->filepath);
 printf("numTokens: %d\n", curr->num_tokens);
 currtok = curr->nexttoken;
 while(currtok!=NULL){
-printf("\t-->| token: %s", currtok->token);
+printf("\t\n-->| token: %s", currtok->token);
 printf("\t probability: %f|", currtok->probability);
+printf("\t size: %d|", currtok->size);
 
 currtok = currtok->next;
 }
@@ -180,6 +186,42 @@ printf("files in linked list: %d", filecount);
 }
 
 
+void freeFileNodeLL(struct FileNode **headptr){
+
+if((*headptr)==NULL){
+printf("attempt to free LL: head points to null\n");
+return;
+}
+
+
+struct FileNode *curr = *headptr;
+struct FileNode *prevfile = NULL;
+struct TokenNode *currtok;
+struct TokenNode *prevtok = NULL;
+
+
+int filecount = 0;
+while(curr!=NULL){
+
+currtok = curr->nexttoken;
+
+while(currtok!=NULL){
+prevtok=currtok;
+currtok = currtok->next;
+free(prevtok->token);
+free(prevtok);
+}
+
+filecount++;
+prevfile = curr;
+curr = curr->nextfile;
+free(prevfile->filepath);
+free(prevfile);
+}
+
+printf("files freed in linked list: %d", filecount);
+
+}
 
 
 
@@ -214,6 +256,7 @@ threadargs->filepath = argument;
 //printf("THREAD ARGS FP:%s", threadargs->filepath);
 threadargs->lockptr = lockptr;
 threadargs->headptr = headptr;
+
 return threadargs;
 }
 
@@ -227,6 +270,61 @@ struct ThreadArgs *args;
 struct ThreadNode *next;
 };
 struct ThreadNode* head = NULL;
+
+
+char* substring(char* string, int begin, int end){
+
+
+int substr_length = end - begin + 1;
+
+char *substr = malloc(sizeof(char)*(substr_length+1));
+
+
+for(int i = 0; i<substr_length; i++){
+substr[i] = string[begin+i];
+}
+substr[substr_length] = '\0';
+
+
+return substr;	
+}
+
+/**Function creates a new string from the given string
+ *which removes all illegal characters (anything not alphabetical, or a dash)
+ */
+char* removeUnwantedChars(char* string){
+
+int newsize = 0;
+
+//iterate once through to determine size needed
+for(int i = 0; i<strlen(string); i++){
+if(isalpha(string[i])|| string[i]=='-'){
+newsize++;
+}
+}
+
+////printf("new size: %d\n", newsize);
+
+
+char* result = malloc(newsize+1);
+
+int k = 0;
+for(int j = 0; j<strlen(string); j++){
+//printf("string k: %c\n", string[k]);
+if(isalpha(string[j]) || string[j]=='-'){
+result[k] = string[j];
+k++;
+}
+
+}
+result[newsize]='\0';
+
+//printf("RETURN\n");
+free(string);
+return result;
+}
+
+
 
 
 
@@ -291,63 +389,130 @@ pthread_mutex_unlock(lockptr);
 //read next 10 bytes into buffer
 
 
-int buffersize = 1000;
+int buffersize = 100000;
 char buf[buffersize];
 int bytesread;
-//int position;
+
 int totalRead = 0;
 
 
-int amountToRead = 10;
-//read into buffer byte by byte, ie, char by char
-//read into buffer 10 bytes at a time
-while((bytesread = read(fd, buf, amountToRead))>0){
-printf("read %d bytes\n", bytesread);
+//read into buffer 15 bytes at a time
+while((bytesread = read(fd, buf, 100000))>0){
+////printf("read %d bytes. Buffer: %s\n", bytesread, buf);
 totalRead+=bytesread;
-//printf("s: %s\n", buf);
 
 
-///struct TokenNode *tokennode = createTokenNode(buf);   
-///addTokenNodetoLL(tokennode, filenode);
-//amountToRead = 400;
-//write(STDOUT_FILENO, buf, totalRead);
-
-int tokensize = 0;
-for(int i=0; i<bytesread; i++){
-
-	
+//iterate over buffer char by char to tokenize
+int i = 0;
+int tokenbegin = 0;
+int tokenend = 0;
+while (i<bytesread){
 //if the last character read is not whitespace, rollback next read to include it	
-if(!isspace(buf[i]) && (i==bytesread-1)){
+if(!isspace(buf[i]) && (i==bytesread-1) && (totalRead<bytesInFile)){
 
-int fileposition = totalRead - tokensize - 1;
+int fileposition = totalRead - bytesread + tokenbegin;
+totalRead = totalRead-bytesread+tokenbegin;
+
 //rewind pointer to begging of token
 lseek(fd, fileposition, SEEK_SET);
+break;
+}
+//if white space reached and not at beginning of position, tokenize previous	
+if(isspace(buf[i]) && (i!=0)){
+//need a substring method!
+char *prelimtoken = substring(buf, tokenbegin, tokenend-1);
+////printf("Prelim Token: %s\n", prelimtoken);
+char *finaltoken = removeUnwantedChars(prelimtoken);
+////printf("Final Token: %s\n", finaltoken);
+struct TokenNode *tokennode = createTokenNode(finaltoken);   
+addTokenNodetoLL(tokennode, filenode);
+
+//reset variables
+tokenbegin = i+1;
+tokenend = i+1;
+}
+//if reached an alphabetical char, make lowercase
+else if(isalpha(buf[i])){
+buf[i]=tolower(buf[i]);
+tokenend++;
+}
+else if(buf[i]=='-'){
+tokenend++;
+}
+else if(isspace(buf[i])){
+buf[i]='S';
+tokenbegin=i+1;
+}
+else{
+tokenend++;
+}
+
+i++;	
+}
+
+
+
+
+
 
 }
 
+/*
+
+//read into buffer 10 bytes at a time
+while((bytesread = read(fd, buf, amountToRead))>0){
+printf("read %d bytes. Buffer: %s\n", bytesread, buf);
+totalRead+=bytesread;
+
+
+//iterate through buffer char by char to tokenize
+int tokensize = 0;
+int begintoken = 0;
+int i = 0;
+while(i<bytesread){
+//for(int i=0; i<bytesread; i++){	
+//if the last character read is not whitespace, rollback next read to include it	
+if(!isspace(buf[i]) && (i==bytesread-1)){
+tokensize++;
+int fileposition = totalRead - tokensize - 1;
+//rewind pointer to begging of token
+lseek(fd, fileposition, SEEK_SET);
+break;
+}
 //if reached an alphabetical char, make lowercase
 else if(isalpha(buf[i])){
 buf[i]=tolower(buf[i]);
 tokensize++;
+i++;
 }
 //if white space reached and not at beginning of position, tokenize previous	
 else if(isspace(buf[i]) && (i!=0)){
 
-	//need a substring method!
-struct TokenNode *tokennode = createTokenNode(buf);   
+//need a substring method!
+char *token = substring(buf, begintoken, i-1);
+printf("Token: %s\n", token);
+struct TokenNode *tokennode = createTokenNode(token);   
 addTokenNodetoLL(tokennode, filenode);
 tokensize=0;
+begintoken = i+1;
+i++;
 //printf("space\n");
+}
+else if(isspace(buf[i])){
+begintoken=i+1;
+i++;
 }
 //reached something that should not be included in the token
 else{
 buf[i]='X';
+tokensize++;
+i++;
 }
 
 }
 
 }
-
+*/
 ////struct TokenNode *tokennode = createTokenNode(buf);   
 ////addTokenNodetoLL(tokennode, filenode);
 
@@ -375,6 +540,7 @@ buf[i]='X';
 
    close(fd);
   
+////pthread_mutex_unlock(lockptr);
 
 return ptr;
 }
@@ -712,17 +878,19 @@ threadargs->headptr = &headptr;
 
 directoryHandler(threadargs);
 
-printFileNodeLL((&headptr));
+////printFileNodeLL((&headptr));
 
 //directoryHandler(&argv[1]);
 
 freeAndJoinLinkedList(head);
 
 printf("threads added: %d, threads joined: %d", threadsadded, threadsjoined);
-printFileNodeLL((&headptr));
+////printFileNodeLL((&headptr));
 //freeAndJoinLinkedList(head);
 
-//printFileNodeLL((&headptr));
+printFileNodeLL((&headptr));
+
+freeFileNodeLL(&headptr);
 free(argument);
 free(threadargs);
 puts("END OF PROGRAM");
