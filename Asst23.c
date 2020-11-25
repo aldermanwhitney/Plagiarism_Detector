@@ -37,8 +37,18 @@ struct FileNode *filehead = NULL;
 
 
 struct TokenNode* createTokenNode(char *token){
+
+//copy token into the heap
+int arg_size = strlen(token);
+char *argument = malloc(sizeof(char)*arg_size+1);
+strncpy(argument, token, arg_size);
+argument[arg_size] = '\0';
+//printf("copied: %s", argument);
+			
+//create token node
 struct TokenNode *tokennode = malloc(sizeof(struct TokenNode));
-tokennode->token = token;
+//tokennode->token = token;
+tokennode->token = argument;
 tokennode-> probability = 0;
 tokennode-> next = NULL;
 return tokennode;	
@@ -113,7 +123,6 @@ struct FileNode *prev = NULL;
 
 //printf("curr filepath: %s", curr->filepath);
 while(curr!=NULL){
-puts("loop");
 prev = curr;
 curr = curr->nextfile;
 }
@@ -150,16 +159,16 @@ while(curr!=NULL){
 printf("____________________________\n");
 printf("filepath: %s\n", curr->filepath);	
 printf("numTokens: %d\n", curr->num_tokens);
-
 currtok = curr->nexttoken;
 while(currtok!=NULL){
 printf("\t-->| token: %s", currtok->token);
-//printf("\t probability: %f|", currtok->probability);
+printf("\t probability: %f|", currtok->probability);
+
 currtok = currtok->next;
 }
 
 
-printf("____________________________\n");
+printf("\n____________________________\n");
 printf("\t\t\t|\n");
 printf("\t\t\tv\n");
 filecount++;
@@ -642,17 +651,22 @@ threadargs->headptr = &headptr;
 
 directoryHandler(threadargs);
 
+printFileNodeLL((&headptr));
 
 //directoryHandler(&argv[1]);
 
-
-printFileNodeLL((&headptr));
 freeAndJoinLinkedList(head);
+
+printf("threads added: %d, threads joined: %d", threadsadded, threadsjoined);
+printFileNodeLL((&headptr));
+//freeAndJoinLinkedList(head);
+
+//printFileNodeLL((&headptr));
 free(argument);
 free(threadargs);
 puts("END OF PROGRAM");
 
-printf("threads added: %d, threads joined: %d", threadsadded, threadsjoined);
+//printf("threads added: %d, threads joined: %d", threadsadded, threadsjoined);
 puts("\nhere");
 return 0;
 }
