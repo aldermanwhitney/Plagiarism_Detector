@@ -251,12 +251,29 @@ int fd = open(pathname, O_RDONLY);
    perror("Line 83: Could not open file\n");
    }
 
+
+   off_t bytesInFile = lseek(fd,0, SEEK_END);
+	
+   //return to beggining of file
+   lseek(fd, 0, SEEK_SET);
+   //Take care of case where lseek returns -1
+   if(bytesInFile==-1){
+   printf("Could not read file\n");
+   }
+   else{
+   printf("  size: %li\n", bytesInFile);
+   }
+
+
+
+
+
 //lock access of shared data structure: FileNodes Linked List
 pthread_mutex_lock(lockptr);  
 struct FileNode *filenode = createFileNode(pathname);   
 addFileNodetoLL(filenode, headptr);
 //printFileNodeLL();
-////pthread_mutex_unlock(lockptr);
+pthread_mutex_unlock(lockptr);
 
 //read one token to the buffer at a time
 //tokenize the token, then read next token to the buffer
@@ -267,34 +284,78 @@ addFileNodetoLL(filenode, headptr);
 //again read as much as possible into the buffer   
 //from offset
 
+//read 10 bytes into the buffer
+//tokenize
+//if the last char was not a new line or a space
+//read totalLastRead - tokencutoff  (ex 8 bytes), throw away
+//read next 10 bytes into buffer
+
+
 int buffersize = 1000;
 char buf[buffersize];
 int bytesread;
-int position;
+//int position;
 int totalRead = 0;
 
+
+int amountToRead = 10;
 //read into buffer byte by byte, ie, char by char
-while((bytesread = read(fd, buf, buffersize))>0){
-//printf("read %d bytes\n", bytesread);
+//read into buffer 10 bytes at a time
+while((bytesread = read(fd, buf, amountToRead))>0){
+printf("read %d bytes\n", bytesread);
 totalRead+=bytesread;
-
 //printf("s: %s\n", buf);
+
+
+///struct TokenNode *tokennode = createTokenNode(buf);   
+///addTokenNodetoLL(tokennode, filenode);
+//amountToRead = 400;
 //write(STDOUT_FILENO, buf, totalRead);
-for(position=0; position<bytesread; position++){
-//write(STDOUT_FILENO, buf, 80);
-if(isspace(buf[position])){
-//printf("space\n");
-}
-}
+
+int tokensize = 0;
+for(int i=0; i<bytesread; i++){
+
+	
+//if the last character read is not whitespace, rollback next read to include it	
+if(!isspace(buf[i]) && (i==bytesread-1)){
+
+int fileposition = totalRead - tokensize - 1;
+//rewind pointer to begging of token
+lseek(fd, fileposition, SEEK_SET);
 
 }
 
+//if reached an alphabetical char, make lowercase
+else if(isalpha(buf[i])){
+buf[i]=tolower(buf[i]);
+tokensize++;
+}
+//if white space reached and not at beginning of position, tokenize previous	
+else if(isspace(buf[i]) && (i!=0)){
+
+	//need a substring method!
 struct TokenNode *tokennode = createTokenNode(buf);   
 addTokenNodetoLL(tokennode, filenode);
+tokensize=0;
+//printf("space\n");
+}
+//reached something that should not be included in the token
+else{
+buf[i]='X';
+}
+
+}
+
+}
+
+////struct TokenNode *tokennode = createTokenNode(buf);   
+////addTokenNodetoLL(tokennode, filenode);
+
+
 //printFileNodeLL();
 
 
-pthread_mutex_unlock(lockptr);
+//pthread_mutex_unlock(lockptr);
 //write(STDOUT_FILENO, buf, totalRead);
 ////printf("total bytes read: %d\n", totalRead);
 //printf("s: %s\n", buf);
