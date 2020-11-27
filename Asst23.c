@@ -17,6 +17,10 @@
 //run: ./detector /ilab/users/wa125/cs214/hw3/  
 // ./detector ./
 //./detector /ilab/users/wa125/cs214/asst2testcases/  
+//./detector ./../Plagiarism_Detector/direct1/ 
+//./detector ../Plagiarism_Detector/direct1/
+//./detector ./ 
+//./detector ./direct1/   
 
 //static pthread_mutex_t threadLLmut = PTHREAD_MUTEX_INITIALIZER;
 
@@ -30,7 +34,7 @@ struct TokenNode *next;
 
 struct FileNode{
 char *filepath;
-int num_tokens;
+double num_tokens;
 struct TokenNode *nexttoken;
 struct FileNode *nextfile;
 };
@@ -118,11 +122,16 @@ printf("Attempted to add token node to null file node");
 return;
 }
 
+
+//increment token count
+filenode->num_tokens = ((filenode->num_tokens) + 1);
+
 //case where file node has no token nodes yet
 if(filenode->nexttoken==NULL){
 filenode->nexttoken = tokennode;
 return;
 }
+
 
 struct TokenNode *curr = filenode->nexttoken;
 struct TokenNode *prev = NULL;
@@ -156,6 +165,35 @@ curr = curr->next;
 }
 prev->next = tokennode;
 puts("NO ORDERING");
+return;	
+}
+
+/**Function takes a pointer to a Struct Filenode
+ *Computes probabilities for each token based on total tokens and number of occurances
+ *Adds these values to struct TokenNode tokens
+ *Will return immediately if there are no tokens, or filenode is NULL
+ */
+void computeProbabilities(struct FileNode *filenode){
+	
+if(filenode==NULL){
+printf("Attempted to compute probabilities on null file node");
+return;
+}
+
+//case where file node has no token nodes
+if(filenode->nexttoken==NULL){
+return;
+}
+
+
+double total_tokens = filenode->num_tokens;
+
+struct TokenNode *curr = filenode->nexttoken;
+
+while(curr!=NULL){
+curr->probability = ((curr->numOccurances)/total_tokens);
+curr = curr->next;
+}
 return;	
 }
 
@@ -200,6 +238,74 @@ prev->nextfile = filenode;
 return;	
 }
 
+
+void sortFileNodeLL(struct FileNode **headptr){
+
+if((*headptr)==NULL){
+printf("head is null");
+return;
+}
+
+
+struct FileNode *curr = *headptr;
+//struct FileNode *prev = NULL;
+
+struct FileNode *swapNode = *headptr;
+struct FileNode *minNode = curr;
+double minNumTokens = curr->num_tokens;
+
+
+while(swapNode!=NULL){
+printf("\nSWAP NODE: %s,  %f", swapNode->filepath, swapNode->num_tokens);
+
+
+
+curr=swapNode;
+minNode = curr;
+minNumTokens = swapNode->num_tokens;
+//find node after swap node with lowest number of tokens
+while(curr!=NULL){
+
+if((curr->num_tokens)<minNumTokens){
+minNumTokens = curr->num_tokens;
+minNode = curr;
+printf("\nMINIMUM NODE FOUND: %s,  %f", minNode->filepath, minNode->num_tokens);
+}	
+//prev = curr;
+curr = curr->nextfile;
+}
+
+
+printf("\nMINIMUM NODE IS %s, num tokens: %f", minNode->filepath, minNode->num_tokens);
+
+//swap values stored in minNode and swapNode
+//store info from minimum node in temp variable for swap
+struct FileNode *temp = malloc(sizeof(struct FileNode));
+temp->filepath = minNode->filepath;
+temp->num_tokens = minNode->num_tokens;
+temp->nexttoken = minNode->nexttoken;
+//temp->nextfile = minNode->nextfile;
+
+minNode->filepath = swapNode->filepath;
+minNode->num_tokens = swapNode->num_tokens;
+minNode->nexttoken = swapNode->nexttoken;
+//minNode->nextfile = swapNode->nextfile;
+
+swapNode->filepath = temp->filepath;
+swapNode->num_tokens = temp->num_tokens;
+swapNode->nexttoken = temp->nexttoken;
+//swapNode->nextfile = temp->nextfile;
+
+free(temp);
+//increment swapnode
+swapNode = swapNode->nextfile;
+}
+
+return;	
+}
+
+
+
 void printFileNodeLL(struct FileNode **headptr){
 
 if((*headptr)==NULL){
@@ -227,7 +333,7 @@ int filecount = 0;
 while(curr!=NULL){
 printf("____________________________\n");
 printf("filepath: %s\n", curr->filepath);	
-printf("numTokens: %d\n", curr->num_tokens);
+printf("numTokens: %f\n", curr->num_tokens);
 
 
 int fd = open(curr->filepath, O_RDONLY);
@@ -321,7 +427,7 @@ free(prevfile->filepath);
 free(prevfile);
 }
 
-printf("files freed in linked list: %d", filecount);
+printf("\nfiles freed in linked list: %d", filecount);
 
 }
 
@@ -449,6 +555,7 @@ int fd = open(pathname, O_RDONLY);
    //take care of case where open returns -1
    if(fd<0){
    perror("Line 83: Could not open file\n");
+   return ptr;
    }
 
 
@@ -558,7 +665,7 @@ i++;
 
 
 }
-
+computeProbabilities(filenode);
    close(fd);
   
 pthread_mutex_unlock(lockptr);
@@ -908,7 +1015,8 @@ freeAndJoinLinkedList(head);
 printf("threads added: %d, threads joined: %d", threadsadded, threadsjoined);
 ////printFileNodeLL((&headptr));
 //freeAndJoinLinkedList(head);
-
+printFileNodeLL(&headptr);
+sortFileNodeLL(&headptr);
 printFileNodeLL((&headptr));
 
 freeFileNodeLL(&headptr);
