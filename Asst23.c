@@ -7,6 +7,7 @@
 #include <string.h>
 #include <pthread.h>
 #include <ctype.h>
+#include <math.h>
 
 #define LTBLUE "\x1B[38;5;33m"
 #define LTGREEN "\x1B[38;5;48m"
@@ -1163,6 +1164,69 @@ return;
 }
 
 
+double computeJensenShannonDistance(struct MeanProbNode *head, struct FileNode *file1, struct FileNode *file2){
+if(head==NULL || file1==NULL || file2==NULL){
+return -1;
+}
+
+struct TokenNode *file1ptr = file1->nexttoken;	
+struct TokenNode *file2ptr = file2->nexttoken;	
+struct MeanProbNode *meanptr = head;
+
+double KLDfile1 = 0;
+double KLDfile2 = 0;
+double JSD = 0;
+
+
+//iterate through file1 and find matching tokens from mean list
+while(file1ptr!=NULL){
+
+//found a match, add calculation to KLD sum
+if(strcmp(file1ptr->token, meanptr->token)==0){
+KLDfile1 += ((file1ptr->probability)*log10((file1ptr->probability)/(meanptr->meanProb)));
+meanptr=meanptr->nextmp;
+file1ptr=file1ptr->next;
+}
+//mean list has a node not in file1, advance mean ptr
+else{ //if(strcmp(file1ptr->token, meanptr->token)<0){
+meanptr=meanptr->nextmp;
+}	
+	
+}
+printf("KLD file 1: %f\n", KLDfile1);
+
+meanptr = head;
+
+//iterate through file2 and find matching tokens from mean list
+while(file2ptr!=NULL){
+//aputs("here: %s, %s\n", file2pt);
+//found a match, add calculation to KLD sum
+if(strcmp(file2ptr->token, meanptr->token)==0){
+KLDfile2 += ((file2ptr->probability)*log10((file2ptr->probability)/(meanptr->meanProb)));
+meanptr=meanptr->nextmp;
+file2ptr=file2ptr->next;
+}
+//mean list has a node not in file1, advance mean ptr
+else{ //if(strcmp(file1ptr->token, meanptr->token)<0){
+meanptr=meanptr->nextmp;
+}	
+	
+}
+printf("KLD file 2: %f\n", KLDfile2);
+
+
+
+JSD = ((KLDfile1+KLDfile2)/2);
+
+
+return JSD;
+
+
+
+}
+
+
+
 int main(int argc, char** argv){
 printf("argc: %d\n", argc);
 printf("argv: %s\n", *argv);
@@ -1232,6 +1296,9 @@ headptr2 = createMeanProbTokenList(file1ptr, file2ptr);
 
 printf("head points to: %s\n", headptr2->token);
 printMeanProbLL(headptr2);
+
+double result = computeJensenShannonDistance(headptr2, file1ptr, file2ptr);
+printf("JSD: %f", result);
 file2ptr=file2ptr->nextfile;	
 }
 
