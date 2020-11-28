@@ -69,10 +69,12 @@ struct TokenNode *tokennode = malloc(sizeof(struct TokenNode));
 tokennode->token = argument;
 tokennode-> probability = 0;
 tokennode-> next = NULL;
-tokennode->size = arg_size;
+tokennode->size = strlen(token);
+//tokennode->size = arg_size;
 tokennode->numOccurances = 1;
 
-free(token);
+//free(argument);
+//free(token);
 return tokennode;	
 }
 
@@ -128,9 +130,10 @@ return defaultValue;
 
 
 void addTokenNodetoLL(struct TokenNode *tokennode, struct FileNode *filenode){
-	
+
 if(filenode==NULL){
 printf("Attempted to add token node to null file node");
+//free(tokennode);
 return;
 }
 
@@ -167,7 +170,8 @@ return;
 
 //found the same token
 if(compare((curr->token), (tokennode->token))==0){
-
+free(tokennode->token);
+free(tokennode);
 curr->numOccurances = (curr->numOccurances) + 1;
 return;
 }	
@@ -342,6 +346,8 @@ struct TokenNode *currtok;
 
 
 int filecount = 0;
+int tokencount = 0;
+
 while(curr!=NULL){
 printf("____________________________\n");
 printf("filepath: %s\n", curr->filepath);	
@@ -386,6 +392,7 @@ close(fd);
 
 currtok = curr->nexttoken;
 while(currtok!=NULL){
+tokencount++;
 printf("\t\n-->| token: %s", currtok->token);
 printf("\t probability: %f|", currtok->probability);
 printf("\t size: %d|", currtok->size);
@@ -401,7 +408,7 @@ filecount++;
 curr = curr->nextfile;
 }
 printf("NULL\n");
-printf("files in linked list: %d", filecount);
+printf("\nfiles in LL: %d\n tokens in LL: %d\n", filecount, tokencount);
 
 }
 
@@ -419,13 +426,14 @@ struct FileNode *prevfile = NULL;
 struct TokenNode *currtok;
 struct TokenNode *prevtok = NULL;
 
-
+int tokencount = 0;
 int filecount = 0;
 while(curr!=NULL){
 
 currtok = curr->nexttoken;
 
 while(currtok!=NULL){
+tokencount++;
 prevtok=currtok;
 currtok = currtok->next;
 free(prevtok->token);
@@ -439,7 +447,7 @@ free(prevfile->filepath);
 free(prevfile);
 }
 
-printf("\nfiles freed in linked list: %d", filecount);
+printf("\nfiles freed in LL: %d\ntokens freed in LL: %d\n", filecount, tokencount);
 
 }
 
@@ -497,16 +505,17 @@ char* substring(char* string, int begin, int end){
 
 int substr_length = end - begin + 1;
 
-char *substr = malloc(sizeof(char)*(substr_length+1));
-
+////char *substr = malloc(sizeof(char)*(substr_length+1));
 
 for(int i = 0; i<substr_length; i++){
-substr[i] = string[begin+i];
+string[i]=string[begin+i];
+////substr[i] = string[begin+i];
 }
-substr[substr_length] = '\0';
+////substr[substr_length] = '\0';
+string[substr_length] = '\0';
 
-
-return substr;	
+return string;
+////return substr;	
 }
 
 /**Function creates a new string from the given string
@@ -525,8 +534,10 @@ newsize++;
 
 ////printf("new size: %d\n", newsize);
 
+////char* result = realloc(string, newsize+1);
+////char* result = malloc(newsize+1);
+char result[newsize+1];
 
-char* result = malloc(newsize+1);
 
 int k = 0;
 for(int j = 0; j<strlen(string); j++){
@@ -540,8 +551,21 @@ k++;
 result[newsize]='\0';
 
 //printf("RETURN\n");
-//free(string);
-return result;
+
+//string = realloc(string, newsize+1);
+
+for(int m=0; m<newsize; m++){
+string[m]=result[m];
+}
+string[newsize]='\0';
+
+
+
+
+////free(result);
+////free(string);
+return string;
+//return result;
 }
 
 
@@ -641,14 +665,21 @@ break;
 //if white space reached and not at beginning of position, tokenize previous	
 if(isspace(buf[i]) && (i!=0)){
 //need a substring method!
+
+/*	
 char *prelimtoken = substring(buf, tokenbegin, tokenend-1);
 ////printf("Prelim Token: %s\n", prelimtoken);
 char *finaltoken = removeUnwantedChars(prelimtoken);
 ////printf("Final Token: %s\n", finaltoken);
+*/
+
+char *finaltoken = substring(buf, tokenbegin, tokenend-1);
+finaltoken = removeUnwantedChars(finaltoken);
+
 struct TokenNode *tokennode = createTokenNode(finaltoken);   
 addTokenNodetoLL(tokennode, filenode);
-free(prelimtoken);
-
+////free(prelimtoken);
+//free(finaltoken);
 //reset variables
 tokenbegin = i+1;
 tokenend = i+1;
@@ -726,10 +757,10 @@ return head;
 }
 
 
-/**Function iterates through linked list of ThreadNodes 
- *and joins each thread, starting at the head
+/**Function takes a pointer to the head of a ThreadNode linked list 
+ * and joins all threads stored in the linked list of ThreadNodes 
  */
-void freeAndJoinLinkedList(struct ThreadNode* head){
+void joinThreadsLinkedList(struct ThreadNode* head){
 ////puts("in free and join linked list");
 
 if (head==NULL){
@@ -1267,39 +1298,165 @@ printf(BLUE "%f"  RESETCOLOR "  %s and %s\n", JSD, file1->filepath, file2->filep
 else{ 
 printf(WHITE "%f"  RESETCOLOR "  %s and %s\n", JSD, file1->filepath, file2->filepath);
 }
+return;
+}
+
+struct OutputNode{
+double JSD;
+double numTokens;
+char *file1name;
+char *file2name;
+struct OutputNode *next;
+};
+
+void printSortedFinalOutput(struct OutputNode *outputhead){
+
+struct OutputNode *curr = outputhead;
+int outputtotal = 0;
+
+while(curr!=NULL){
+double JSD = curr->JSD;	
+double numTokens = curr->numTokens;
+if((JSD>=0) && (JSD<0.1)){
+printf("Tokens: %f " RED "%f"  RESETCOLOR "  %s and %s\n", numTokens, JSD, curr->file1name, curr->file2name);
+}
+else if((JSD>=0.1) && (JSD<0.15)){
+printf("Tokens: %f " YELLOW "%f"  RESETCOLOR "  %s and %s\n", numTokens, JSD, curr->file1name, curr->file2name);
+}
+else if((JSD>=0.15) && (JSD<0.2)){
+printf("Tokens: %f " GREEN "%f"  RESETCOLOR "  %s and %s\n", numTokens, JSD, curr->file1name, curr->file2name);
+}
+else if((JSD>=0.2) && (JSD<0.25)){
+printf("Tokens: %f " CYAN "%f"  RESETCOLOR "  %s and %s\n", numTokens, JSD, curr->file1name, curr->file2name);
+}
+else if((JSD>=0.25) && (JSD<0.3)){
+printf("Tokens: %f " BLUE "%f"  RESETCOLOR "  %s and %s\n", numTokens, JSD, curr->file1name, curr->file2name);
+}
+else{ 
+printf("Tokens: %f " WHITE "%f"  RESETCOLOR "  %s and %s\n", numTokens, JSD, curr->file1name, curr->file2name);
+}
+outputtotal++;	
+curr=curr->next;
+}
+printf("Output Total: %d", outputtotal);
+return;	
+}
+
+
+/**Function takes two FileNode pointers, their calculated JSD and a pointer to the OutputNode linked list head
+ * It mallocs a new OutputNode and adds it to the linked list in an order sorted by increasing number of combined tokens
+ *from file1 and file2
+ */
+struct OutputNode* createOutputNodeAndAddToLL(double JSD, struct FileNode *file1, struct FileNode *file2, struct OutputNode *outputhead){
+
+if(file1==NULL || file2==NULL){
+printf("In create output node, file1 or file2 is null.\n");
+return NULL;
+}
+
+//copy filepaths
+int arg1_size = strlen(file1->filepath);
+char *argument1 = malloc(sizeof(char)*arg1_size+1);
+strncpy(argument1, file1->filepath, arg1_size);
+argument1[arg1_size] = '\0';
+//printf("copied: %s", argument);
+
+int arg2_size = strlen(file2->filepath);
+char *argument2 = malloc(sizeof(char)*arg2_size+1);
+strncpy(argument2, file2->filepath, arg2_size);
+argument2[arg2_size] = '\0';
+
+//create struct
+struct OutputNode *outputNode = malloc(sizeof(struct OutputNode));
+outputNode->JSD = JSD;
+outputNode->file1name = argument1;
+outputNode->file2name = argument2;
+outputNode->numTokens = ((file1->num_tokens) + (file2->num_tokens));
+outputNode->next = NULL;
+
+
+if(outputhead==NULL){
+outputhead=outputNode;
+return outputhead;
+}
+
+struct OutputNode *curr = outputhead;
+struct OutputNode *prev = NULL;
+
+
+while(curr!=NULL){
+
+//output node number of tokens smaller than the head
+if(((outputNode->numTokens)<(curr->numTokens)) && (prev==NULL)){
+outputNode->next = curr;
+outputhead = outputNode;
+return outputhead;
+}
+//found a node other than the head where output node has less tokens
+if((outputNode->numTokens)<(curr->numTokens)){
+outputNode->next = curr;
+prev->next = outputNode;
+return outputhead;	
+}
+
+prev=curr;	
+curr=curr->next;
+}
+
+//case where output Node has more tokens then all other output nodes in list
+prev->next=outputNode;
+return outputhead;
+
+
 
 }
 
 
-int main(int argc, char** argv){
-printf("argc: %d\n", argc);
-printf("argv: %s\n", *argv);
 
+int main(int argc, char** argv){
+
+//verify correct number of arguments
 if(argc!=2){
 return 1;
 }
 
 printDirectoryContents(argv[1]);
 
-pthread_mutex_t *lock = malloc(sizeof(pthread_mutex_t));
-pthread_mutex_init(lock, NULL);
-
-//struct FileNode *headptr = malloc(sizeof(struct FileNode*));
-struct FileNode *headptr = NULL;
-//headptr = NULL;
+//make sure initial call includes the null byte and a forward slash
+//If not, add them in
+char *argument;
 
 int arg_size = strlen(argv[1]);
-char *argument = malloc(sizeof(char)*arg_size+1);
+if(argv[1][arg_size-1]!='/'){
+argument = malloc(sizeof(char)*arg_size+2);
+strncpy(argument, argv[1], arg_size);
+argument[arg_size]='/';
+argument[arg_size+1]='\0';
+}
+else{
+argument = malloc(sizeof(char)*arg_size+1);
 strncpy(argument, argv[1], arg_size);
 argument[arg_size] = '\0';
+}
+
 
 printf("argument param: %s\n", argument);
 
+//Check to see if initial directory exists/is accessible
+DIR *dirptr = opendir(argument);
+	
+if(dirptr==NULL){
+printf("Could not open directory\n");
+return EXIT_FAILURE;
+}
 
-//directoryHandler(&argument);
+closedir(dirptr);
 
+//Initialize synchronization method and shared data structure
+pthread_mutex_t *lock = malloc(sizeof(pthread_mutex_t));
+pthread_mutex_init(lock, NULL);
+struct FileNode *headptr = NULL;
 
-//struct ThreadArgs *threadargs = createThreadArgsStruct(argument);
 
 //create first thread arg struct to send initial directory argument in
 struct ThreadArgs *threadargs = malloc(sizeof(struct ThreadArgs));
@@ -1308,25 +1465,39 @@ threadargs->lockptr = lock;
 threadargs->headptr = &headptr;
 //threadargs->filepath = argv[1]; this works too
 
+//first recursive call to directoryHandler
 directoryHandler(threadargs);
 
 ////printFileNodeLL((&headptr));
 
-//directoryHandler(&argv[1]);
-
-freeAndJoinLinkedList(head);
+//join all threads
+joinThreadsLinkedList(head);
 
 printf("threads added: %d, threads joined: %d", threadsadded, threadsjoined);
 ////printFileNodeLL((&headptr));
 //freeAndJoinLinkedList(head);
 ////printFileNodeLL(&headptr);
+
+//make sure shared data structure was written to
+if(headptr==NULL){
+printf("Error: Shared data structure not written to.\n");
+exit(EXIT_FAILURE);
+}
+
+
+//sort LL tokens alphabetically for each file
 sortFileNodeLL(&headptr);
-printFileNodeLL((&headptr));
+printFileNodeLL(&headptr);
 
+int numOutput = 0;
 
+//Compute mean probability, Kullbeck-Leibler Divergence, and Jensen-Shannon Distance
+//from shared data structure created by threads
 struct FileNode *file1ptr = headptr;
 struct FileNode *file2ptr = file1ptr->nextfile;
 struct MeanProbNode *headptr2 = NULL;
+struct OutputNode *outputhead = NULL;
+
 
 while(file1ptr!=NULL){
 
@@ -1337,13 +1508,19 @@ while(file2ptr!=NULL){
 
 ////printf("file 2: %s\n", file2ptr->filepath);		
 headptr2 = createMeanProbTokenList(file1ptr, file2ptr);
-
+numOutput++;
 ////printf("head points to: %s\n", headptr2->token);
 ////printMeanProbLL(headptr2);
 
 double result = computeJensenShannonDistance(headptr2, file1ptr, file2ptr);
 //printf("JSD: %f", result);
 printFinalOutput(result, file1ptr, file2ptr);
+
+
+outputhead = createOutputNodeAndAddToLL(result, file1ptr, file2ptr, outputhead);
+
+
+
 file2ptr=file2ptr->nextfile;	
 freeMeanProbLL(headptr2);
 }
@@ -1351,21 +1528,19 @@ freeMeanProbLL(headptr2);
 
 	
 file1ptr = file1ptr->nextfile;	
-//file2ptr = file1ptr->nextfile;
 }
 
+printf("OutputTotal: %d\n", numOutput);
+
+printSortedFinalOutput(outputhead);
 
 
 
 
-
-
+//free everything
 freeFileNodeLL(&headptr);
 free(argument);
 free(threadargs);
-puts("END OF PROGRAM");
-
-//printf("threads added: %d, threads joined: %d", threadsadded, threadsjoined);
-puts("\nhere");
+puts("\nEND OF PROGRAM\n");
 return 0;
 }
