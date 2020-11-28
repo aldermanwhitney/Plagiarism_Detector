@@ -15,6 +15,11 @@
 #define WHITE   "\x1B[37m"
 #define RESETCOLOR "\x1B[0m"
 
+#define RED "\x1B[38;5;9m"
+#define YELLOW "\e[38;5;11m"
+#define GREEN "\e[38;5;10m"
+#define CYAN "\e[38;5;14m"
+#define BLUE "\e[38;5;12m"
 //run: ./detector /ilab/users/wa125/cs214/hw3/  
 // ./detector ./
 //./detector /ilab/users/wa125/cs214/asst2testcases/  
@@ -40,7 +45,7 @@ struct TokenNode *nexttoken;
 struct FileNode *nextfile;
 };
 
-struct FileNode *filehead = NULL;
+//struct FileNode *filehead = NULL;
 
 //Node used to create linked list of mean probabilities
 struct MeanProbNode{
@@ -48,10 +53,6 @@ char *token;
 double meanProb;
 struct MeanProbNode *nextmp;
 };
-
-
-
-
 
 struct TokenNode* createTokenNode(char *token){
 
@@ -1038,12 +1039,13 @@ struct TokenNode *file2tokenptr = file2->nexttoken;
 struct MeanProbNode *lastadded = NULL;
 struct MeanProbNode *head = NULL;
 
-
+/*
 double file1tokens = file1->num_tokens;
 double file2tokens = file2->num_tokens;
 double totaltokens = file1tokens + file2tokens;
 
 printf("total tokens: %f\n", totaltokens);
+*/
 
 //iterate the two (sorted) linked lists of token nodes
 while((file1tokenptr!=NULL) || file2tokenptr!=NULL){
@@ -1091,7 +1093,7 @@ break;
 //if the tokens are equal
 else if(strcmp(file1tokenptr->token, file2tokenptr->token)==0){
 
-printf("tokens equal\n");
+///printf("tokens equal\n");
 struct MeanProbNode *mpn = malloc(sizeof(struct MeanProbNode));
 mpn->token = file1tokenptr->token;
 mpn->meanProb = (((file1tokenptr->probability)+(file2tokenptr->probability))/2);
@@ -1108,7 +1110,7 @@ file2tokenptr = file2tokenptr->next;
 //if file one's token is alphabetically before file two's token
 else if(strcmp(file1tokenptr->token, file2tokenptr->token)<0){
 
-printf("file1<file2\n");
+///printf("file1<file2\n");
 
 struct MeanProbNode *mpn = malloc(sizeof(struct MeanProbNode));
 mpn->token = file1tokenptr->token;
@@ -1131,7 +1133,7 @@ mpn->meanProb = ((file2tokenptr->probability)/2);
 
 //function to add token to linked list, possibly return a pointer to the last added
 
-printf("file2<file1\n");
+///printf("file2<file1\n");
 lastadded = addMeanProbNodetoLL(mpn, lastadded);
 if(head==NULL){
 head = lastadded;
@@ -1193,7 +1195,7 @@ meanptr=meanptr->nextmp;
 }	
 	
 }
-printf("KLD file 1: %f\n", KLDfile1);
+////printf("KLD file 1: %f\n", KLDfile1);
 
 meanptr = head;
 
@@ -1212,7 +1214,7 @@ meanptr=meanptr->nextmp;
 }	
 	
 }
-printf("KLD file 2: %f\n", KLDfile2);
+////printf("KLD file 2: %f\n", KLDfile2);
 
 
 
@@ -1225,6 +1227,48 @@ return JSD;
 
 }
 
+/**Given a pointer to the head FileNode of a linked list
+ *Frees all malloc'ed nodes
+ */
+void freeMeanProbLL(struct MeanProbNode *head){
+
+struct MeanProbNode *curr = head;
+struct MeanProbNode *prev = NULL;
+
+while(curr!=NULL){
+prev = curr;	
+curr=curr->nextmp;
+free(prev);
+}
+
+
+return;	
+}
+
+
+
+void printFinalOutput(double JSD, struct FileNode *file1, struct FileNode *file2){
+printf("Number of Tokens: %f  ", ((file1->num_tokens) + (file2->num_tokens)));
+if((JSD>=0) && (JSD<0.1)){
+printf(RED "%f"  RESETCOLOR "  %s and %s\n", JSD, file1->filepath, file2->filepath);
+}
+else if((JSD>=0.1) && (JSD<0.15)){
+printf(YELLOW "%f"  RESETCOLOR "  %s and %s\n", JSD, file1->filepath, file2->filepath);
+}
+else if((JSD>=0.15) && (JSD<0.2)){
+printf(GREEN "%f"  RESETCOLOR "  %s and %s\n", JSD, file1->filepath, file2->filepath);
+}
+else if((JSD>=0.2) && (JSD<0.25)){
+printf(CYAN "%f"  RESETCOLOR "  %s and %s\n", JSD, file1->filepath, file2->filepath);
+}
+else if((JSD>=0.25) && (JSD<0.3)){
+printf(BLUE "%f"  RESETCOLOR "  %s and %s\n", JSD, file1->filepath, file2->filepath);
+}
+else{ 
+printf(WHITE "%f"  RESETCOLOR "  %s and %s\n", JSD, file1->filepath, file2->filepath);
+}
+
+}
 
 
 int main(int argc, char** argv){
@@ -1286,20 +1330,22 @@ struct MeanProbNode *headptr2 = NULL;
 
 while(file1ptr!=NULL){
 
-printf("file 1: %s\n\n", file1ptr->filepath);	
+////printf("file 1: %s\n\n", file1ptr->filepath);	
 
 file2ptr = file1ptr->nextfile;
 while(file2ptr!=NULL){
 
-printf("file 2: %s\n", file2ptr->filepath);		
+////printf("file 2: %s\n", file2ptr->filepath);		
 headptr2 = createMeanProbTokenList(file1ptr, file2ptr);
 
-printf("head points to: %s\n", headptr2->token);
-printMeanProbLL(headptr2);
+////printf("head points to: %s\n", headptr2->token);
+////printMeanProbLL(headptr2);
 
 double result = computeJensenShannonDistance(headptr2, file1ptr, file2ptr);
-printf("JSD: %f", result);
+//printf("JSD: %f", result);
+printFinalOutput(result, file1ptr, file2ptr);
 file2ptr=file2ptr->nextfile;	
+freeMeanProbLL(headptr2);
 }
 
 
