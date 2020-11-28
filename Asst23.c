@@ -41,6 +41,16 @@ struct FileNode *nextfile;
 
 struct FileNode *filehead = NULL;
 
+//Node used to create linked list of mean probabilities
+struct MeanProbNode{
+char *token;
+double meanProb;
+struct MeanProbNode *nextmp;
+};
+
+
+
+
 
 struct TokenNode* createTokenNode(char *token){
 
@@ -94,13 +104,13 @@ for(int i=0; i<smallestSize; i++){
 	
 if(token1[i]<token2[i]){
 
-printf("compare %s <-> %s defaultValue:%d return 1 \n", token1, token2, defaultValue);
+//printf("compare %s <-> %s defaultValue:%d return 1 \n", token1, token2, defaultValue);
 //puts("compare finished");
 return 1;
 }
 if(token1[i]>token2[i]){
 
-printf("compare %s <-> %s defaultValue:%d return -1\n", token1, token2, defaultValue);
+//printf("compare %s <-> %s defaultValue:%d return -1\n", token1, token2, defaultValue);
 //puts("compare finished");
 return -1;
 }
@@ -109,7 +119,7 @@ return -1;
 }
 
 
-printf("compare %s <-> %s defaultValue:%d  return 0 \n", token1, token2, defaultValue);
+//printf("compare %s <-> %s defaultValue:%d  return 0 \n", token1, token2, defaultValue);
 return defaultValue;	
 }
 
@@ -256,7 +266,7 @@ double minNumTokens = curr->num_tokens;
 
 
 while(swapNode!=NULL){
-printf("\nSWAP NODE: %s,  %f", swapNode->filepath, swapNode->num_tokens);
+//printf("\nSWAP NODE: %s,  %f", swapNode->filepath, swapNode->num_tokens);
 
 
 
@@ -269,14 +279,14 @@ while(curr!=NULL){
 if((curr->num_tokens)<minNumTokens){
 minNumTokens = curr->num_tokens;
 minNode = curr;
-printf("\nMINIMUM NODE FOUND: %s,  %f", minNode->filepath, minNode->num_tokens);
+//printf("\nMINIMUM NODE FOUND: %s,  %f", minNode->filepath, minNode->num_tokens);
 }	
 //prev = curr;
 curr = curr->nextfile;
 }
 
 
-printf("\nMINIMUM NODE IS %s, num tokens: %f", minNode->filepath, minNode->num_tokens);
+//printf("\nMINIMUM NODE IS %s, num tokens: %f", minNode->filepath, minNode->num_tokens);
 
 //swap values stored in minNode and swapNode
 //store info from minimum node in temp variable for swap
@@ -528,7 +538,7 @@ k++;
 result[newsize]='\0';
 
 //printf("RETURN\n");
-free(string);
+//free(string);
 return result;
 }
 
@@ -580,7 +590,7 @@ pthread_mutex_lock(lockptr);
 struct FileNode *filenode = createFileNode(pathname);   
 addFileNodetoLL(filenode, headptr);
 //printFileNodeLL();
-////pthread_mutex_unlock(lockptr);
+pthread_mutex_unlock(lockptr);
 
 //read one token to the buffer at a time
 //tokenize the token, then read next token to the buffer
@@ -635,6 +645,7 @@ char *finaltoken = removeUnwantedChars(prelimtoken);
 ////printf("Final Token: %s\n", finaltoken);
 struct TokenNode *tokennode = createTokenNode(finaltoken);   
 addTokenNodetoLL(tokennode, filenode);
+free(prelimtoken);
 
 //reset variables
 tokenbegin = i+1;
@@ -668,7 +679,7 @@ i++;
 computeProbabilities(filenode);
    close(fd);
   
-pthread_mutex_unlock(lockptr);
+////pthread_mutex_unlock(lockptr);
 
 return ptr;
 }
@@ -967,6 +978,191 @@ continue;
   }
 
 
+
+/**Given a pointer to a MeanProbNode to add to the LL, and a pointer to the last added node
+ *The function adds the MeanProbNode to the last poisition in the linked list
+ *And returns the updated pointer to the last added node
+ */
+struct MeanProbNode* addMeanProbNodetoLL(struct MeanProbNode *mpnode, struct MeanProbNode *lastadded){
+
+if(mpnode==NULL){
+printf("Error, attempted to add a null node\n");
+return lastadded;
+}
+
+
+//no nodes yet added to the list
+if(lastadded==NULL){
+mpnode->nextmp = NULL;
+lastadded = mpnode;
+//printf("first add\n");
+return lastadded;
+}
+
+
+
+lastadded->nextmp=mpnode;
+mpnode->nextmp = NULL;
+lastadded = mpnode;
+
+//printf("another add\n");
+return lastadded;
+
+	
+}
+
+/**Function takes two FileNode pointers
+ *Creates a linked list of MeanProbNodes 
+ *for the mean probability of tokens in both lists
+ *Returns a pointer to the head of the MeanProbNode linked list
+ */
+struct MeanProbNode* createMeanProbTokenList(struct FileNode *file1, struct FileNode *file2){
+
+if(file1==NULL || file2==NULL){
+printf("one of the files is null\n");
+return NULL;
+}
+
+
+if(file1->nexttoken==NULL || file2->nexttoken==NULL){
+printf("one of the files is empty\n");
+return NULL;
+}
+
+//pointers for traversing the list
+struct TokenNode *file1tokenptr = file1->nexttoken;
+struct TokenNode *file2tokenptr = file2->nexttoken;
+
+//pointers for head and tail of list
+struct MeanProbNode *lastadded = NULL;
+struct MeanProbNode *head = NULL;
+
+
+double file1tokens = file1->num_tokens;
+double file2tokens = file2->num_tokens;
+double totaltokens = file1tokens + file2tokens;
+
+printf("total tokens: %f\n", totaltokens);
+
+//iterate the two (sorted) linked lists of token nodes
+while((file1tokenptr!=NULL) || file2tokenptr!=NULL){
+
+//if we've reached the end of file two's LL, append rest of file one's tokens to the MeanProb LL
+if (file1tokenptr!=NULL && file2tokenptr==NULL){
+
+while(file1tokenptr!=NULL){
+struct MeanProbNode *mpn = malloc(sizeof(struct MeanProbNode));
+mpn->token = file1tokenptr->token;
+mpn->meanProb = ((file1tokenptr->probability)/2);
+
+//add to linked list
+lastadded = addMeanProbNodetoLL(mpn, lastadded);
+if(head==NULL){
+head = lastadded;
+}
+
+file1tokenptr=file1tokenptr->next;
+}
+
+break;	
+}
+
+//if we've reached the end of file one's LL, append rest of file two's tokens to the mean prob LL
+else if (file1tokenptr==NULL && file2tokenptr!=NULL){
+
+while(file2tokenptr!=NULL){
+struct MeanProbNode *mpn = malloc(sizeof(struct MeanProbNode));
+mpn->token = file2tokenptr->token;
+mpn->meanProb = ((file2tokenptr->probability)/2);
+
+//add to linked list
+lastadded = addMeanProbNodetoLL(mpn, lastadded);
+if(head==NULL){
+head = lastadded;
+}
+
+
+file2tokenptr=file2tokenptr->next;
+}
+
+break;	
+}
+//if the tokens are equal
+else if(strcmp(file1tokenptr->token, file2tokenptr->token)==0){
+
+printf("tokens equal\n");
+struct MeanProbNode *mpn = malloc(sizeof(struct MeanProbNode));
+mpn->token = file1tokenptr->token;
+mpn->meanProb = (((file1tokenptr->probability)+(file2tokenptr->probability))/2);
+
+//function to add token to linked list, possibly return a pointer to the last added
+lastadded = addMeanProbNodetoLL(mpn, lastadded);
+if(head==NULL){
+head=lastadded;
+}
+//advance both pointers
+file1tokenptr = file1tokenptr->next;
+file2tokenptr = file2tokenptr->next;
+}
+//if file one's token is alphabetically before file two's token
+else if(strcmp(file1tokenptr->token, file2tokenptr->token)<0){
+
+printf("file1<file2\n");
+
+struct MeanProbNode *mpn = malloc(sizeof(struct MeanProbNode));
+mpn->token = file1tokenptr->token;
+mpn->meanProb = ((file1tokenptr->probability)/2);
+
+//function to add token to linked list, possibly return a pointer to the last added
+
+lastadded = addMeanProbNodetoLL(mpn, lastadded);
+if(head==NULL){
+head = lastadded;
+}
+//advance first pointer
+file1tokenptr = file1tokenptr->next;
+}
+//if file two's token is alphabetically before file one's token
+else{ //if(strcmp(file1tokenptr->token, file2tokenptr->token)>0){
+struct MeanProbNode *mpn = malloc(sizeof(struct MeanProbNode));
+mpn->token = file2tokenptr->token;
+mpn->meanProb = ((file2tokenptr->probability)/2);
+
+//function to add token to linked list, possibly return a pointer to the last added
+
+printf("file2<file1\n");
+lastadded = addMeanProbNodetoLL(mpn, lastadded);
+if(head==NULL){
+head = lastadded;
+}
+//advance first pointer
+file2tokenptr = file2tokenptr->next;
+}
+
+
+}
+
+
+
+return head;
+}
+
+/**Function which takes a pointer to the head of a MeanProbNode linked list
+ *and prints the contents of the list
+ *Used for debugging
+ */
+void printMeanProbLL(struct MeanProbNode *head){
+
+struct MeanProbNode *curr = head;
+while(curr!=NULL){
+printf("Token: %s MeanProbability: %f\n", curr->token, curr->meanProb);	
+curr=curr->nextmp;	
+}
+
+return;	
+}
+
+
 int main(int argc, char** argv){
 printf("argc: %d\n", argc);
 printf("argv: %s\n", *argv);
@@ -1015,9 +1211,41 @@ freeAndJoinLinkedList(head);
 printf("threads added: %d, threads joined: %d", threadsadded, threadsjoined);
 ////printFileNodeLL((&headptr));
 //freeAndJoinLinkedList(head);
-printFileNodeLL(&headptr);
+////printFileNodeLL(&headptr);
 sortFileNodeLL(&headptr);
 printFileNodeLL((&headptr));
+
+
+struct FileNode *file1ptr = headptr;
+struct FileNode *file2ptr = file1ptr->nextfile;
+struct MeanProbNode *headptr2 = NULL;
+
+while(file1ptr!=NULL){
+
+printf("file 1: %s\n\n", file1ptr->filepath);	
+
+file2ptr = file1ptr->nextfile;
+while(file2ptr!=NULL){
+
+printf("file 2: %s\n", file2ptr->filepath);		
+headptr2 = createMeanProbTokenList(file1ptr, file2ptr);
+
+printf("head points to: %s\n", headptr2->token);
+printMeanProbLL(headptr2);
+file2ptr=file2ptr->nextfile;	
+}
+
+
+	
+file1ptr = file1ptr->nextfile;	
+//file2ptr = file1ptr->nextfile;
+}
+
+
+
+
+
+
 
 freeFileNodeLL(&headptr);
 free(argument);
