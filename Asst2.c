@@ -16,13 +16,6 @@
 #define GREEN "\x1B[38;5;10m"
 #define CYAN "\x1B[38;5;14m"
 #define BLUE "\x1B[38;5;12m"
-//run: ./detector /ilab/users/wa125/cs214/hw3/  
-// ./detector ./
-//./detector /ilab/users/wa125/cs214/asst2testcases/  
-//./detector ./../Plagiarism_Detector/direct1/ 
-//./detector ../Plagiarism_Detector/direct1/
-//./detector ./ 
-//./detector ./direct1/   
 
 //Used for LL of tokens in shared datastructure
 struct TokenNode{
@@ -32,6 +25,7 @@ int numOccurances;
 int size;
 struct TokenNode *next;
 };
+
 //Used of LL of Files in shared data structure
 struct FileNode{
 char *filepath;
@@ -248,7 +242,10 @@ swapNode = swapNode->nextfile;
 return;	
 }
 
-
+/**Function takes a double pointer to the head of the FileNode LinkedList
+ *And prints all of the files and tokens in the shared data structure
+ *Used for Debugging
+ */
 void printFileNodeLL(struct FileNode **headptr){
 
 if((*headptr)==NULL){
@@ -273,10 +270,7 @@ int fd = open(curr->filepath, O_RDONLY);
    if(fd<0){
    perror("Line 83: Could not open file\n");
    }
-
-
-   off_t bytesInFile = lseek(fd,0, SEEK_END);
-	
+   off_t bytesInFile = lseek(fd,0, SEEK_END);	
    //return to beggining of file
    lseek(fd, 0, SEEK_SET);
    //Take care of case where lseek returns -1
@@ -286,8 +280,6 @@ int fd = open(curr->filepath, O_RDONLY);
    else{
    printf("  size: %li\n", bytesInFile);
    }
-
-
 int buffersize = 200;
 char buf[buffersize];
 int bytesread;
@@ -295,9 +287,7 @@ int bytesread;
 while((bytesread = read(fd, buf, 200))>0){
 printf("read %d bytes. \nText in File:\n\n %s\n", bytesread, buf);
 }
-
 close(fd);
-
 currtok = curr->nexttoken;
 while(currtok!=NULL){
 tokencount++;
@@ -307,7 +297,6 @@ printf("\t size: %d|", currtok->size);
 printf("\t Number of Occurances: %d|", currtok->numOccurances);
 currtok = currtok->next;
 }
-
 printf("\n____________________________\n");
 printf("\t\t\t|\n");
 printf("\t\t\tv\n");
@@ -316,7 +305,6 @@ curr = curr->nextfile;
 }
 printf("NULL\n");
 printf("\nfiles in LL: %d\n tokens in LL: %d\n", filecount, tokencount);
-
 }
 
 /**Function takes a double pointer to the head of the FileNode linkedlist
@@ -596,7 +584,6 @@ current=current->next;
 return;
 }
 
-
 /**Function which takes two pointers to char arrays
  * And returneds a pointer to a newly allocated char array
  * which contains the second string appended to the first
@@ -619,7 +606,6 @@ newstring[space_needed-1]='\0';
 return newstring;
 }
 
-
 /**Thread Function
  *Takes a pointer to a ThreadArgs struct
  *Recursively iterates though directory and subdirectories
@@ -640,8 +626,8 @@ struct FileNode **headptr = threadargs->headptr;
 
 DIR *dirptr = opendir(dirpath);
 if(dirptr==NULL){
-printf("Could not open directory: %s\t", *(char**)ptr);
-perror("error: ");
+//printf("Could not open directory: %s\t", *(char**)ptr);
+perror("Could not open directory");
 return ptr;
 }
 
@@ -834,7 +820,6 @@ while(curr!=NULL){
 printf("Token: %s MeanProbability: %f\n", curr->token, curr->meanProb);	
 curr=curr->nextmp;	
 }
-
 return;	
 }
 
