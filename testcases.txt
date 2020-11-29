@@ -49,16 +49,20 @@ Correct Output: Yes, technically they are identical.
 
 8) Compared 14 files with sizes ranging from 2 bytes to 718176 Bytes
 Output: 91 Lines of compared files, which makes sense, since the distinct pairs are (14)*13/2 = 91
-No segmentation faults or infinite loops
+No segmentation faults, infinite loops or memory leaks
 A range of numbers from 0.00 to 0.301030
 
-9) Tested a huge variety of directory paths, including absolute and relative, as well as with or without a terminating slash
+9) Compared 314 files with sizes ranging from 2 bytes to 3895730 Bytes
+Output: 49141 Lines of compared files, which makes sense, since the distinct pairs are (314)*313/2 = 49141
+No segmentation faults, infinite loops or memory leaks
+A range of numbers from 0.00 to 0.301030
 
-10) Tested an empty directory
+10) Tested a huge variety of directory paths, including absolute and relative, as well as with or without a terminating slash
+
+11) Tested an empty directory
 Output: Data structure not written to. This makes sense, the directory was able to be opened, but there were no files inside to tokenize.
 
-11) Tested an incorrect pathname
+12) Tested an incorrect pathname
 Output: Could not open directory. This output is correct as specified in the assignment spec.
-
 
 

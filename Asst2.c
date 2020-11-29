@@ -1045,29 +1045,8 @@ free(prev);
 return;	
 }
 
-void printFinalOutput(double JSD, struct FileNode *file1, struct FileNode *file2){
-printf("Number of Tokens: %f  ", ((file1->num_tokens) + (file2->num_tokens)));
-if((JSD>=0) && (JSD<0.1)){
-printf(RED "%f"  RESETCOLOR "  %s and %s\n", JSD, file1->filepath, file2->filepath);
-}
-else if((JSD>=0.1) && (JSD<0.15)){
-printf(YELLOW "%f"  RESETCOLOR "  %s and %s\n", JSD, file1->filepath, file2->filepath);
-}
-else if((JSD>=0.15) && (JSD<0.2)){
-printf(GREEN "%f"  RESETCOLOR "  %s and %s\n", JSD, file1->filepath, file2->filepath);
-}
-else if((JSD>=0.2) && (JSD<0.25)){
-printf(CYAN "%f"  RESETCOLOR "  %s and %s\n", JSD, file1->filepath, file2->filepath);
-}
-else if((JSD>=0.25) && (JSD<0.3)){
-printf(BLUE "%f"  RESETCOLOR "  %s and %s\n", JSD, file1->filepath, file2->filepath);
-}
-else{ 
-printf(WHITE "%f"  RESETCOLOR "  %s and %s\n", JSD, file1->filepath, file2->filepath);
-}
-return;
-}
-
+//Nodes for the final output Linked List
+//Used to sort before output
 struct OutputNode{
 double JSD;
 double numTokens;
@@ -1076,6 +1055,9 @@ char *file2name;
 struct OutputNode *next;
 };
 
+/**Function takes a pointer to the head of the OutputNode Linked List
+ * Prints the output color coded and ordered as specified in the spec
+ */
 void printSortedFinalOutput(struct OutputNode *outputhead){
 
 struct OutputNode *curr = outputhead;
@@ -1083,24 +1065,24 @@ int outputtotal = 0;
 
 while(curr!=NULL){
 double JSD = curr->JSD;	
-double numTokens = curr->numTokens;
+//double numTokens = curr->numTokens;
 if((JSD>=0) && (JSD<0.1)){
-printf("Tokens: %f " RED "%f"  RESETCOLOR " \"%s\" and \"%s\"\n", numTokens, JSD, curr->file1name, curr->file2name);
+printf(RED "%f"  RESETCOLOR " \"%s\" and \"%s\"\n", JSD, curr->file1name, curr->file2name);
 }
 else if((JSD>=0.1) && (JSD<0.15)){
-printf("Tokens: %f " YELLOW "%f"  RESETCOLOR "  \"%s\" and \"%s\"\n", numTokens, JSD, curr->file1name, curr->file2name);
+printf(YELLOW "%f"  RESETCOLOR "  \"%s\" and \"%s\"\n", JSD, curr->file1name, curr->file2name);
 }
 else if((JSD>=0.15) && (JSD<0.2)){
-printf("Tokens: %f " GREEN "%f"  RESETCOLOR "  \"%s\" and \"%s\"\n", numTokens, JSD, curr->file1name, curr->file2name);
+printf(GREEN "%f"  RESETCOLOR "  \"%s\" and \"%s\"\n", JSD, curr->file1name, curr->file2name);
 }
 else if((JSD>=0.2) && (JSD<0.25)){
-printf("Tokens: %f " CYAN "%f"  RESETCOLOR "  \"%s\" and \"%s\"\n", numTokens, JSD, curr->file1name, curr->file2name);
+printf(CYAN "%f"  RESETCOLOR "  \"%s\" and \"%s\"\n", JSD, curr->file1name, curr->file2name);
 }
 else if((JSD>=0.25) && (JSD<0.3)){
-printf("Tokens: %f " BLUE "%f"  RESETCOLOR "  \"%s\" and \"%s\"\n", numTokens, JSD, curr->file1name, curr->file2name);
+printf(BLUE "%f"  RESETCOLOR "  \"%s\" and \"%s\"\n", JSD, curr->file1name, curr->file2name);
 }
 else{ 
-printf("Tokens: %f " WHITE "%f"  RESETCOLOR "  \"%s\" and \"%s\"\n", numTokens, JSD, curr->file1name, curr->file2name);
+printf(WHITE "%f"  RESETCOLOR "  \"%s\" and \"%s\"\n", JSD, curr->file1name, curr->file2name);
 }
 outputtotal++;	
 curr=curr->next;
