@@ -504,29 +504,32 @@ int fd = open(pathname, O_RDONLY);
 pthread_mutex_lock(lockptr);  
 struct FileNode *filenode = createFileNode(pathname);   
 addFileNodetoLL(filenode, headptr);
-////pthread_mutex_unlock(lockptr);
+pthread_mutex_unlock(lockptr);
 
-int buffersize = 10000;
+int buffersize = 10001;
 char buf[buffersize];
 int bytesread;
 int totalRead = 0;
 
 //read into buffer 15 bytes at a time
-while((bytesread = read(fd, buf, 10000))>0){
+while((bytesread = read(fd, buf, 10001))>0){
+////printf("read %d bytes. Buffer: %s\n", bytesread, buf);
 ////printf("read %d bytes. Buffer: %s\n", bytesread, buf);
 totalRead+=bytesread;
+
+printf("read %d bytes. Total Read: %d\n", bytesread, totalRead);
 
 //iterate over buffer char by char to tokenize
 int i = 0;
 int tokenbegin = 0;
 int tokenend = 0;
 while (i<bytesread){
-////printf("loop buffer: %s\n", buf);	
-////printf("i=%d  %c\n", i, buf[i]);
+//printf("loop buffer: %s\n", buf);	
+//printf("i=%d  %c\n", i, buf[i]);
 
 //if the last character read is not whitespace and not at the end of file, rollback next read to include it	
 if(!isspace(buf[i]) && (i==bytesread-1) && (totalRead<bytesInFile)){
-////printf("rollback\n");
+printf("rollback\n");
 int fileposition = totalRead - bytesread + tokenbegin;
 totalRead = totalRead-bytesread+tokenbegin;
 //rewind pointer to beginning of token
@@ -571,7 +574,7 @@ i++;
 computeProbabilities(filenode);
    close(fd);
   
-pthread_mutex_unlock(lockptr);
+////pthread_mutex_unlock(lockptr);
 
 return ptr;
 }
