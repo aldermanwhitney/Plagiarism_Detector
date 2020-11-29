@@ -30,6 +30,15 @@
 
 //static pthread_mutex_t threadLLmut = PTHREAD_MUTEX_INITIALIZER;
 
+/**TODO: Fix Tokenizer logic
+ * make test cases file
+ * debug and test
+ * clean up code
+ *
+ *
+ */
+
+
 struct TokenNode{
 char *token;
 double probability;
@@ -56,6 +65,12 @@ struct MeanProbNode *nextmp;
 
 struct TokenNode* createTokenNode(char *token){
 
+//case where token is all whitespace
+if (strlen(token)==0){
+return NULL;
+}
+
+	
 //copy token into the heap
 int arg_size = strlen(token);
 char *argument = malloc(sizeof(char)*arg_size+1);
@@ -78,57 +93,6 @@ tokennode->numOccurances = 1;
 return tokennode;	
 }
 
-
-/**Function compares two tokens alphabetically
- *Returns -1 if token1 should after  token2
- Returns 0 if they are equal
- Returns 1 if token2 should come after token1
- */
-int compare(char *token1, char *token2){
-
-int defaultValue = 0;
-int smallestSize;
-
-//Compare lengths to order shorter words before longer words (ie, an before and)
-if(strlen(token1)<strlen(token2)){
-smallestSize = strlen(token1);
-defaultValue = 1;
-}
-else if(strlen(token2)<strlen(token1)){
-smallestSize = strlen(token2);
-defaultValue = -1;
-}
-else{
-smallestSize = strlen(token2);
-defaultValue = 0;
-}
-
-//printf("compare %s <-> %s defaultValue:%d \n", token1, token2, defaultValue);
-for(int i=0; i<smallestSize; i++){
-	
-if(token1[i]<token2[i]){
-
-//printf("compare %s <-> %s defaultValue:%d return 1 \n", token1, token2, defaultValue);
-//puts("compare finished");
-return 1;
-}
-if(token1[i]>token2[i]){
-
-//printf("compare %s <-> %s defaultValue:%d return -1\n", token1, token2, defaultValue);
-//puts("compare finished");
-return -1;
-}
-
-
-}
-
-
-//printf("compare %s <-> %s defaultValue:%d  return 0 \n", token1, token2, defaultValue);
-return defaultValue;	
-}
-
-
-
 void addTokenNodetoLL(struct TokenNode *tokennode, struct FileNode *filenode){
 
 if(filenode==NULL){
@@ -136,6 +100,12 @@ printf("Attempted to add token node to null file node");
 //free(tokennode);
 return;
 }
+
+if(tokennode==NULL){
+return;
+}
+
+
 
 
 //increment token count
@@ -154,7 +124,7 @@ struct TokenNode *prev = NULL;
 while(curr!=NULL){
 
 //token to insert must be inserted here
-if(compare((curr->token), (tokennode->token))==-1){
+if(strcmp((curr->token), (tokennode->token))>0){
 
 if(prev!=NULL){
 tokennode->next = curr;
@@ -169,7 +139,7 @@ return;
 }
 
 //found the same token
-if(compare((curr->token), (tokennode->token))==0){
+if(strcmp((curr->token), (tokennode->token))==0){
 free(tokennode->token);
 free(tokennode);
 curr->numOccurances = (curr->numOccurances) + 1;
@@ -662,8 +632,12 @@ totalRead = totalRead-bytesread+tokenbegin;
 lseek(fd, fileposition, SEEK_SET);
 break;
 }
+if(isspace(buf[i]) && buf[i-1]=='X'){
+buf[i]='X';
+tokenbegin=i+1;
+}
 //if white space reached and not at beginning of position, tokenize previous	
-if(isspace(buf[i]) && (i!=0)){
+else if(isspace(buf[i]) && (i!=0)){
 //need a substring method!
 
 /*	
@@ -673,9 +647,12 @@ char *finaltoken = removeUnwantedChars(prelimtoken);
 ////printf("Final Token: %s\n", finaltoken);
 */
 
-char *finaltoken = substring(buf, tokenbegin, tokenend-1);
+char *finaltoken = substring(buf, tokenbegin, tokenend);
+
+printf("Final Token: %s\n", finaltoken);
 finaltoken = removeUnwantedChars(finaltoken);
 
+printf("Final Token: %s\n", finaltoken);
 struct TokenNode *tokennode = createTokenNode(finaltoken);   
 addTokenNodetoLL(tokennode, filenode);
 ////free(prelimtoken);
@@ -693,7 +670,7 @@ else if(buf[i]=='-'){
 tokenend++;
 }
 else if(isspace(buf[i])){
-buf[i]='S';
+buf[i]='X';
 tokenbegin=i+1;
 }
 else{
@@ -1056,11 +1033,12 @@ printf("one of the files is null\n");
 return NULL;
 }
 
-
+/*
 if(file1->nexttoken==NULL || file2->nexttoken==NULL){
 printf("one of the files is empty\n");
 return NULL;
 }
+*/
 
 //pointers for traversing the list
 struct TokenNode *file1tokenptr = file1->nexttoken;
@@ -1077,6 +1055,15 @@ double totaltokens = file1tokens + file2tokens;
 
 printf("total tokens: %f\n", totaltokens);
 */
+
+//case where we have two files and no tokens
+//if(file1ptr==NULL & file2ptr==NULL){
+
+//}
+
+
+
+
 
 //iterate the two (sorted) linked lists of token nodes
 while((file1tokenptr!=NULL) || file2tokenptr!=NULL){
@@ -1198,8 +1185,12 @@ return;
 
 
 double computeJensenShannonDistance(struct MeanProbNode *head, struct FileNode *file1, struct FileNode *file2){
-if(head==NULL || file1==NULL || file2==NULL){
+if(file1==NULL || file2==NULL){
 return -1;
+}
+//this is only the case if we have two files with NO tokens
+if(head==NULL){
+return 0;
 }
 
 struct TokenNode *file1ptr = file1->nexttoken;	
@@ -1411,6 +1402,24 @@ return outputhead;
 
 }
 
+void freeOutputNodeLL(struct OutputNode *outputhead){
+
+struct OutputNode *curr = outputhead;
+struct OutputNode *prev = NULL;
+
+while(curr!=NULL){
+
+prev=curr;
+curr=curr->next;
+free(prev->file1name);
+free(prev->file2name);
+free(prev);	
+}
+
+
+return;	
+}
+
 
 
 int main(int argc, char** argv){
@@ -1538,6 +1547,7 @@ printSortedFinalOutput(outputhead);
 
 
 //free everything
+freeOutputNodeLL(outputhead);
 freeFileNodeLL(&headptr);
 free(argument);
 free(threadargs);
