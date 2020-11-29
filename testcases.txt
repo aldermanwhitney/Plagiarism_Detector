@@ -1,0 +1,64 @@
+Test Cases
+
+//Tests for Output\\
+
+1) Compared two identical text files containing "Alice in Wonderland" by Lewis Carrol.
+Size of Files: 174688 Bytes
+Output Value: 0.00
+Output Correct: Yes, files were identical
+
+2) Compared an empty file with a file containing half a dozen words.
+Size of Files: File 1: 2 Bytes (Empty Spaces)
+	       File 2: 38 Bytes
+Output Value: 0.150515
+Output Corerct: Yes, this makes sense. We are using log base 10 so comparing an empty file with a file with text results
+in: log(2) / 2 which equals 0.150515
+
+3) Compared two files with completely different words.
+Size of Files: File 1: 38 Bytes
+	       File 2: 31 Bytes
+Output Value: 0.301030
+Correct Output: Yes, the maximum value we can get for difference in the formulas used with log base 10
+is log(2) which equals 0.30103
+
+4) Compared "Alice in Wonderland" by Lewis Carrol with a text file known to not contain any words that were also in Alice in Wonderland.
+Size of Files: File 1: 174688 Bytes
+	       File 2: 38 Bytes
+Output Value: 0.301030
+Correct Output: Yes, no similar words at all in either file
+
+5) Compared "The Odyssey" by Homer with a text file known to not contain any words that were also in The Odyssey.
+Size of Files: File 1: 718176 Bytes
+	       File 2: 31 Bytes
+Output Value: 0.301030
+Correct Output: Yes, no similar words at all in either file
+
+6)Compared "The Odyssey" by Homer with "Alice In Wonderland" by Lewis Carrol
+Size of Files: File 1: 718176 Bytes
+	       File 2: 174688 Bytes
+Output Value: 0.071533
+Correct Output: It seems to be in the right ballpark. It is closer to identical than completely different, which makes sense considering that the books use a LOT of the same words. I also had a friend run these files in their program, and we had to exact same output. So I think its safe to say it was a good test case.
+
+7) Compared two files both with no tokens (only a varied amount of spaces)
+Size of Files: File 1: 2 Bytes
+	       File 2: 4 Bytes
+Output Value: 0.00
+Correct Output: Yes, technically they are identical.
+
+//Additional Tests\\
+
+8) Compared 14 files with sizes ranging from 2 bytes to 718176 Bytes
+Output: 91 Lines of compared files, which makes sense, since the distinct pairs are (14)*13/2 = 91
+No segmentation faults or infinite loops
+A range of numbers from 0.00 to 0.301030
+
+9) Tested a huge variety of directory paths, including absolute and relative, as well as with or without a terminating slash
+
+10) Tested an empty directory
+Output: Data structure not written to. This makes sense, the directory was able to be opened, but there were no files inside to tokenize.
+
+11) Tested an incorrect pathname
+Output: Could not open directory. This output is correct as specified in the assignment spec.
+
+
+

@@ -1223,6 +1223,7 @@ DIR *dirptr = opendir(argument);
 	
 if(dirptr==NULL){
 printf("Could not open directory\n");
+free(argument);
 return EXIT_FAILURE;
 }
 
