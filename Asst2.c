@@ -70,18 +70,18 @@ if (strlen(token)==0){
 return NULL;
 }
 
-	
+/*	
 //copy token into the heap
 int arg_size = strlen(token);
 char *argument = malloc(sizeof(char)*arg_size+1);
 strncpy(argument, token, arg_size);
 argument[arg_size] = '\0';
 //printf("copied: %s", argument);
-			
+*/			
 //create token node
 struct TokenNode *tokennode = malloc(sizeof(struct TokenNode));
-//tokennode->token = token;
-tokennode->token = argument;
+tokennode->token = token;
+//tokennode->token = argument;
 tokennode-> probability = 0;
 tokennode-> next = NULL;
 tokennode->size = strlen(token);
@@ -475,17 +475,17 @@ char* substring(char* string, int begin, int end){
 
 int substr_length = end - begin + 1;
 
-////char *substr = malloc(sizeof(char)*(substr_length+1));
+char *substr = malloc(sizeof(char)*(substr_length+1));
 
 for(int i = 0; i<substr_length; i++){
 string[i]=string[begin+i];
-////substr[i] = string[begin+i];
+substr[i] = string[begin+i];
 }
-////substr[substr_length] = '\0';
-string[substr_length] = '\0';
+substr[substr_length] = '\0';
+////string[substr_length] = '\0';
 
-return string;
-////return substr;	
+////return string;
+return substr;	
 }
 
 /**Function creates a new string from the given string
@@ -586,7 +586,7 @@ pthread_mutex_lock(lockptr);
 struct FileNode *filenode = createFileNode(pathname);   
 addFileNodetoLL(filenode, headptr);
 //printFileNodeLL();
-pthread_mutex_unlock(lockptr);
+////pthread_mutex_unlock(lockptr);
 
 //read one token to the buffer at a time
 //tokenize the token, then read next token to the buffer
@@ -622,9 +622,12 @@ int i = 0;
 int tokenbegin = 0;
 int tokenend = 0;
 while (i<bytesread){
+
+////printf("loop buffer: %s\n", buf);	
+////printf("i=%d  %c\n", i, buf[i]);
 //if the last character read is not whitespace, rollback next read to include it	
 if(!isspace(buf[i]) && (i==bytesread-1) && (totalRead<bytesInFile)){
-
+////printf("rollback\n");
 int fileposition = totalRead - bytesread + tokenbegin;
 totalRead = totalRead-bytesread+tokenbegin;
 
@@ -632,10 +635,10 @@ totalRead = totalRead-bytesread+tokenbegin;
 lseek(fd, fileposition, SEEK_SET);
 break;
 }
-if(isspace(buf[i]) && buf[i-1]=='X'){
-buf[i]='X';
-tokenbegin=i+1;
-}
+//if(isspace(buf[i]) && buf[i-1]=='X'){
+//buf[i]='X';
+//tokenbegin=i+1;
+//}
 //if white space reached and not at beginning of position, tokenize previous	
 else if(isspace(buf[i]) && (i!=0)){
 //need a substring method!
@@ -646,13 +649,13 @@ char *prelimtoken = substring(buf, tokenbegin, tokenend-1);
 char *finaltoken = removeUnwantedChars(prelimtoken);
 ////printf("Final Token: %s\n", finaltoken);
 */
-
+////printf("before substring buf: %s\n", buf);
 char *finaltoken = substring(buf, tokenbegin, tokenend);
 
-printf("Final Token: %s\n", finaltoken);
+////printf("Final Token: %s\n", finaltoken);
 finaltoken = removeUnwantedChars(finaltoken);
-
-printf("Final Token: %s\n", finaltoken);
+////printf("after substring buf: %s\n", buf);
+////printf("Final Token: %s\n", finaltoken);
 struct TokenNode *tokennode = createTokenNode(finaltoken);   
 addTokenNodetoLL(tokennode, filenode);
 ////free(prelimtoken);
@@ -663,8 +666,15 @@ tokenend = i+1;
 }
 //if reached an alphabetical char, make lowercase
 else if(isalpha(buf[i])){
+////printf("alpha");
 buf[i]=tolower(buf[i]);
 tokenend++;
+//if(tokenbegin == -1){
+//tokenbegin = i;	
+//}
+//if(tokenend==-1){
+//tokenend = i;
+//}
 }
 else if(buf[i]=='-'){
 tokenend++;
@@ -689,7 +699,7 @@ i++;
 computeProbabilities(filenode);
    close(fd);
   
-////pthread_mutex_unlock(lockptr);
+pthread_mutex_unlock(lockptr);
 
 return ptr;
 }
@@ -1309,22 +1319,22 @@ while(curr!=NULL){
 double JSD = curr->JSD;	
 double numTokens = curr->numTokens;
 if((JSD>=0) && (JSD<0.1)){
-printf("Tokens: %f " RED "%f"  RESETCOLOR "  %s and %s\n", numTokens, JSD, curr->file1name, curr->file2name);
+printf("Tokens: %f " RED "%f"  RESETCOLOR " \"%s\" and \"%s\"\n", numTokens, JSD, curr->file1name, curr->file2name);
 }
 else if((JSD>=0.1) && (JSD<0.15)){
-printf("Tokens: %f " YELLOW "%f"  RESETCOLOR "  %s and %s\n", numTokens, JSD, curr->file1name, curr->file2name);
+printf("Tokens: %f " YELLOW "%f"  RESETCOLOR "  \"%s\" and \"%s\"\n", numTokens, JSD, curr->file1name, curr->file2name);
 }
 else if((JSD>=0.15) && (JSD<0.2)){
-printf("Tokens: %f " GREEN "%f"  RESETCOLOR "  %s and %s\n", numTokens, JSD, curr->file1name, curr->file2name);
+printf("Tokens: %f " GREEN "%f"  RESETCOLOR "  \"%s\" and \"%s\"\n", numTokens, JSD, curr->file1name, curr->file2name);
 }
 else if((JSD>=0.2) && (JSD<0.25)){
-printf("Tokens: %f " CYAN "%f"  RESETCOLOR "  %s and %s\n", numTokens, JSD, curr->file1name, curr->file2name);
+printf("Tokens: %f " CYAN "%f"  RESETCOLOR "  \"%s\" and \"%s\"\n", numTokens, JSD, curr->file1name, curr->file2name);
 }
 else if((JSD>=0.25) && (JSD<0.3)){
-printf("Tokens: %f " BLUE "%f"  RESETCOLOR "  %s and %s\n", numTokens, JSD, curr->file1name, curr->file2name);
+printf("Tokens: %f " BLUE "%f"  RESETCOLOR "  \"%s\" and \"%s\"\n", numTokens, JSD, curr->file1name, curr->file2name);
 }
 else{ 
-printf("Tokens: %f " WHITE "%f"  RESETCOLOR "  %s and %s\n", numTokens, JSD, curr->file1name, curr->file2name);
+printf("Tokens: %f " WHITE "%f"  RESETCOLOR "  \"%s\" and \"%s\"\n", numTokens, JSD, curr->file1name, curr->file2name);
 }
 outputtotal++;	
 curr=curr->next;
@@ -1496,7 +1506,7 @@ exit(EXIT_FAILURE);
 
 //sort LL tokens alphabetically for each file
 sortFileNodeLL(&headptr);
-printFileNodeLL(&headptr);
+////printFileNodeLL(&headptr);
 
 int numOutput = 0;
 
@@ -1523,7 +1533,7 @@ numOutput++;
 
 double result = computeJensenShannonDistance(headptr2, file1ptr, file2ptr);
 //printf("JSD: %f", result);
-printFinalOutput(result, file1ptr, file2ptr);
+////printFinalOutput(result, file1ptr, file2ptr);
 
 
 outputhead = createOutputNodeAndAddToLL(result, file1ptr, file2ptr, outputhead);
