@@ -38,7 +38,7 @@
  *
  */
 
-
+//Used for LL of tokens in shared datastructure
 struct TokenNode{
 char *token;
 double probability;
@@ -46,15 +46,13 @@ int numOccurances;
 int size;
 struct TokenNode *next;
 };
-
+//Used of LL of Files in shared data structure
 struct FileNode{
 char *filepath;
 double num_tokens;
 struct TokenNode *nexttoken;
 struct FileNode *nextfile;
 };
-
-//struct FileNode *filehead = NULL;
 
 //Node used to create linked list of mean probabilities
 struct MeanProbNode{
@@ -63,33 +61,26 @@ double meanProb;
 struct MeanProbNode *nextmp;
 };
 
+/**Function takes a pointer to a token string
+ *and returns a pointer to a newly malloc'ed 
+ *TokenNode containing the token string
+ */
 struct TokenNode* createTokenNode(char *token){
 
 //case where token is all whitespace
 if (strlen(token)==0){
+free(token);
 return NULL;
 }
 
-/*	
-//copy token into the heap
-int arg_size = strlen(token);
-char *argument = malloc(sizeof(char)*arg_size+1);
-strncpy(argument, token, arg_size);
-argument[arg_size] = '\0';
-//printf("copied: %s", argument);
-*/			
 //create token node
 struct TokenNode *tokennode = malloc(sizeof(struct TokenNode));
 tokennode->token = token;
-//tokennode->token = argument;
 tokennode-> probability = 0;
 tokennode-> next = NULL;
 tokennode->size = strlen(token);
-//tokennode->size = arg_size;
 tokennode->numOccurances = 1;
 
-//free(argument);
-//free(token);
 return tokennode;	
 }
 
@@ -104,9 +95,6 @@ return;
 if(tokennode==NULL){
 return;
 }
-
-
-
 
 //increment token count
 filenode->num_tokens = ((filenode->num_tokens) + 1);
@@ -150,7 +138,6 @@ prev = curr;
 curr = curr->next;
 }
 prev->next = tokennode;
-puts("NO ORDERING");
 return;	
 }
 
@@ -165,15 +152,12 @@ if(filenode==NULL){
 printf("Attempted to compute probabilities on null file node");
 return;
 }
-
 //case where file node has no token nodes
 if(filenode->nexttoken==NULL){
 return;
 }
 
-
 double total_tokens = filenode->num_tokens;
-
 struct TokenNode *curr = filenode->nexttoken;
 
 while(curr!=NULL){
@@ -182,7 +166,6 @@ curr = curr->next;
 }
 return;	
 }
-
 
 struct FileNode* createFileNode(char *filepath){
 
@@ -196,7 +179,9 @@ return filenode;
 }
 
 
-
+/**Function takes a double pointer to the head of the FileNode LL
+ *and a pointer to a FileNode. Adds the FileNode to the end of the LL
+ */
 void addFileNodetoLL(struct FileNode *filenode, struct FileNode **headptr){
 
 //printf("filenode filepath: %s", filenode->filepath);
@@ -224,7 +209,10 @@ prev->nextfile = filenode;
 return;	
 }
 
-
+/**Function takes a double pointer to the head of the FileNode linked list
+ *Sorts all FileNodes in shared data structure by increasing number of tokens
+ *As specified in the spec
+ */
 void sortFileNodeLL(struct FileNode **headptr){
 
 if((*headptr)==NULL){
@@ -232,23 +220,17 @@ printf("head is null");
 return;
 }
 
-
 struct FileNode *curr = *headptr;
-//struct FileNode *prev = NULL;
-
 struct FileNode *swapNode = *headptr;
 struct FileNode *minNode = curr;
 double minNumTokens = curr->num_tokens;
 
-
 while(swapNode!=NULL){
 //printf("\nSWAP NODE: %s,  %f", swapNode->filepath, swapNode->num_tokens);
-
-
-
 curr=swapNode;
 minNode = curr;
 minNumTokens = swapNode->num_tokens;
+
 //find node after swap node with lowest number of tokens
 while(curr!=NULL){
 
@@ -261,35 +243,28 @@ minNode = curr;
 curr = curr->nextfile;
 }
 
-
 //printf("\nMINIMUM NODE IS %s, num tokens: %f", minNode->filepath, minNode->num_tokens);
-
 //swap values stored in minNode and swapNode
 //store info from minimum node in temp variable for swap
 struct FileNode *temp = malloc(sizeof(struct FileNode));
 temp->filepath = minNode->filepath;
 temp->num_tokens = minNode->num_tokens;
 temp->nexttoken = minNode->nexttoken;
-//temp->nextfile = minNode->nextfile;
 
 minNode->filepath = swapNode->filepath;
 minNode->num_tokens = swapNode->num_tokens;
 minNode->nexttoken = swapNode->nexttoken;
-//minNode->nextfile = swapNode->nextfile;
 
 swapNode->filepath = temp->filepath;
 swapNode->num_tokens = temp->num_tokens;
 swapNode->nexttoken = temp->nexttoken;
-//swapNode->nextfile = temp->nextfile;
 
 free(temp);
 //increment swapnode
 swapNode = swapNode->nextfile;
 }
-
 return;	
 }
-
 
 
 void printFileNodeLL(struct FileNode **headptr){
@@ -299,21 +274,8 @@ printf("attempt to print LL: head points to null\n");
 return;
 }
 
-	
-/*	
-if (filehead==NULL){
-printf("filehead is null");
-return;
-}
-
-struct FileNode *curr = filehead;
-struct TokenNode *currtok;
-*/
-
-
 struct FileNode *curr = *headptr;
 struct TokenNode *currtok;
-
 
 int filecount = 0;
 int tokencount = 0;
@@ -322,7 +284,6 @@ while(curr!=NULL){
 printf("____________________________\n");
 printf("filepath: %s\n", curr->filepath);	
 printf("numTokens: %f\n", curr->num_tokens);
-
 
 int fd = open(curr->filepath, O_RDONLY);
 
@@ -355,11 +316,6 @@ printf("read %d bytes. \nText in File:\n\n %s\n", bytesread, buf);
 
 close(fd);
 
-
-
-
-
-
 currtok = curr->nexttoken;
 while(currtok!=NULL){
 tokencount++;
@@ -369,7 +325,6 @@ printf("\t size: %d|", currtok->size);
 printf("\t Number of Occurances: %d|", currtok->numOccurances);
 currtok = currtok->next;
 }
-
 
 printf("\n____________________________\n");
 printf("\t\t\t|\n");
@@ -382,14 +337,15 @@ printf("\nfiles in LL: %d\n tokens in LL: %d\n", filecount, tokencount);
 
 }
 
-
+/**Function takes a double pointer to the head of the FileNode linkedlist
+ *And frees all nodes in linked list
+ */
 void freeFileNodeLL(struct FileNode **headptr){
 
 if((*headptr)==NULL){
 printf("attempt to free LL: head points to null\n");
 return;
 }
-
 
 struct FileNode *curr = *headptr;
 struct FileNode *prevfile = NULL;
@@ -399,7 +355,6 @@ struct TokenNode *prevtok = NULL;
 int tokencount = 0;
 int filecount = 0;
 while(curr!=NULL){
-
 currtok = curr->nexttoken;
 
 while(currtok!=NULL){
@@ -418,10 +373,7 @@ free(prevfile);
 }
 
 printf("\nfiles freed in LL: %d\ntokens freed in LL: %d\n", filecount, tokencount);
-
 }
-
-
 
 /**Struct to hold arguments needed by threads
  */
@@ -461,6 +413,7 @@ return threadargs;
 
 /**Linked List to keep track of threads in use
  * Used for properly joining all threads
+ * and freeing arguments
  */
 struct ThreadNode{
 pthread_t threadID;
@@ -469,12 +422,13 @@ struct ThreadNode *next;
 };
 struct ThreadNode* head = NULL;
 
-
+/**Function takes a pointer to a string
+ *and a beginning and end position
+ *returns a newly malloc'ed substring
+ */
 char* substring(char* string, int begin, int end){
 
-
 int substr_length = end - begin + 1;
-
 char *substr = malloc(sizeof(char)*(substr_length+1));
 
 for(int i = 0; i<substr_length; i++){
@@ -482,32 +436,22 @@ string[i]=string[begin+i];
 substr[i] = string[begin+i];
 }
 substr[substr_length] = '\0';
-////string[substr_length] = '\0';
-
-////return string;
 return substr;	
 }
 
 /**Function creates a new string from the given string
- *which removes all illegal characters (anything not alphabetical, or a dash)
+ *wtih all illegal chars removed (anything not alphabetical, or a dash)
  */
 char* removeUnwantedChars(char* string){
 
 int newsize = 0;
-
 //iterate once through to determine size needed
 for(int i = 0; i<strlen(string); i++){
 if(isalpha(string[i])|| string[i]=='-'){
 newsize++;
 }
 }
-
-////printf("new size: %d\n", newsize);
-
-////char* result = realloc(string, newsize+1);
-////char* result = malloc(newsize+1);
 char result[newsize+1];
-
 
 int k = 0;
 for(int j = 0; j<strlen(string); j++){
@@ -520,56 +464,35 @@ k++;
 }
 result[newsize]='\0';
 
-//printf("RETURN\n");
-
-//string = realloc(string, newsize+1);
-
 for(int m=0; m<newsize; m++){
 string[m]=result[m];
 }
 string[newsize]='\0';
 
-
-
-
-////free(result);
-////free(string);
 return string;
-//return result;
 }
 
-
-
-
-
 /**Function takes a pointer to a thread arg struct as a void pointer
- *handles file operations, and returns the same pointer
+ *handles file operations including adding to shared datastructure and tokenizing
+  returns the input pointer
  */
 void* fileHandler(void* ptr){
 
 struct ThreadArgs *threadargs = ((struct ThreadArgs*)ptr);
-
 printf("thread in fileHandler, pathname3: %s\n", threadargs->filepath);
-
 char* pathname = threadargs->filepath;
 pthread_mutex_t *lockptr = threadargs->lockptr;
 struct FileNode **headptr = threadargs->headptr;
 
-
 int fd = open(pathname, O_RDONLY);
 
-   //take care of case where open returns -1
    if(fd<0){
-   perror("Line 83: Could not open file\n");
+   perror("Could not open file\n");
    return ptr;
    }
-
-
-   off_t bytesInFile = lseek(fd,0, SEEK_END);
-	
+   off_t bytesInFile = lseek(fd,0, SEEK_END);	
    //return to beggining of file
    lseek(fd, 0, SEEK_SET);
-   //Take care of case where lseek returns -1
    if(bytesInFile==-1){
    printf("Could not read file\n");
    }
@@ -577,78 +500,41 @@ int fd = open(pathname, O_RDONLY);
    printf("  size: %li\n", bytesInFile);
    }
 
-
-
-
-
 //lock access of shared data structure: FileNodes Linked List
 pthread_mutex_lock(lockptr);  
 struct FileNode *filenode = createFileNode(pathname);   
 addFileNodetoLL(filenode, headptr);
-//printFileNodeLL();
 ////pthread_mutex_unlock(lockptr);
 
-//read one token to the buffer at a time
-//tokenize the token, then read next token to the buffer
-
-
-//read as much as possible into the buffer
-//tokenize token
-//again read as much as possible into the buffer   
-//from offset
-
-//read 10 bytes into the buffer
-//tokenize
-//if the last char was not a new line or a space
-//read totalLastRead - tokencutoff  (ex 8 bytes), throw away
-//read next 10 bytes into buffer
-
-
-int buffersize = 100000;
+int buffersize = 10000;
 char buf[buffersize];
 int bytesread;
-
 int totalRead = 0;
 
-
 //read into buffer 15 bytes at a time
-while((bytesread = read(fd, buf, 100000))>0){
+while((bytesread = read(fd, buf, 10000))>0){
 ////printf("read %d bytes. Buffer: %s\n", bytesread, buf);
 totalRead+=bytesread;
-
 
 //iterate over buffer char by char to tokenize
 int i = 0;
 int tokenbegin = 0;
 int tokenend = 0;
 while (i<bytesread){
-
 ////printf("loop buffer: %s\n", buf);	
 ////printf("i=%d  %c\n", i, buf[i]);
-//if the last character read is not whitespace, rollback next read to include it	
+
+//if the last character read is not whitespace and not at the end of file, rollback next read to include it	
 if(!isspace(buf[i]) && (i==bytesread-1) && (totalRead<bytesInFile)){
 ////printf("rollback\n");
 int fileposition = totalRead - bytesread + tokenbegin;
 totalRead = totalRead-bytesread+tokenbegin;
-
-//rewind pointer to begging of token
+//rewind pointer to beginning of token
 lseek(fd, fileposition, SEEK_SET);
 break;
 }
-//if(isspace(buf[i]) && buf[i-1]=='X'){
-//buf[i]='X';
-//tokenbegin=i+1;
-//}
 //if white space reached and not at beginning of position, tokenize previous	
 else if(isspace(buf[i]) && (i!=0)){
-//need a substring method!
-
-/*	
-char *prelimtoken = substring(buf, tokenbegin, tokenend-1);
-////printf("Prelim Token: %s\n", prelimtoken);
-char *finaltoken = removeUnwantedChars(prelimtoken);
-////printf("Final Token: %s\n", finaltoken);
-*/
 ////printf("before substring buf: %s\n", buf);
 char *finaltoken = substring(buf, tokenbegin, tokenend);
 
@@ -658,9 +544,7 @@ finaltoken = removeUnwantedChars(finaltoken);
 ////printf("Final Token: %s\n", finaltoken);
 struct TokenNode *tokennode = createTokenNode(finaltoken);   
 addTokenNodetoLL(tokennode, filenode);
-////free(prelimtoken);
-//free(finaltoken);
-//reset variables
+
 tokenbegin = i+1;
 tokenend = i+1;
 }
@@ -669,31 +553,19 @@ else if(isalpha(buf[i])){
 ////printf("alpha");
 buf[i]=tolower(buf[i]);
 tokenend++;
-//if(tokenbegin == -1){
-//tokenbegin = i;	
-//}
-//if(tokenend==-1){
-//tokenend = i;
-//}
 }
 else if(buf[i]=='-'){
 tokenend++;
 }
 else if(isspace(buf[i])){
-buf[i]='X';
+buf[i]='.';
 tokenbegin=i+1;
 }
 else{
 tokenend++;
 }
-
 i++;	
 }
-
-
-
-
-
 
 }
 computeProbabilities(filenode);
@@ -711,11 +583,8 @@ return ptr;
 struct ThreadNode* createThreadandStoreinLinkedList(void *(*start_routine) (void *), void *arg){ 
 
 struct ThreadNode *threadnode = malloc(sizeof(struct ThreadNode));
-
 struct ThreadArgs *threadargs = ((struct ThreadArgs*)arg);
-//printf("thread args file path: %s\n", (threadargs->filepath));
 threadnode->args = threadargs;
-
 pthread_create(&(threadnode->threadID), NULL, start_routine, threadargs);
 
 //Add ThreadNode holding ThreadID to end of linked list
@@ -727,7 +596,6 @@ head = threadnode;
 else{
 struct ThreadNode *curr = head;
 struct ThreadNode *prev = NULL;
-
 while(curr!=NULL){
 pos++;
 prev = curr;
@@ -737,8 +605,6 @@ prev->next = threadnode;
 threadnode->next = NULL;
 }
 
-
-//printf("(thread added), position: %d\n", pos);
 threadsadded++;
 return head;
 }
@@ -748,42 +614,22 @@ return head;
  * and joins all threads stored in the linked list of ThreadNodes 
  */
 void joinThreadsLinkedList(struct ThreadNode* head){
-////puts("in free and join linked list");
-
 if (head==NULL){
 return;
 }
 
-struct ThreadNode *prev = NULL;
 struct ThreadNode *current = head;
 
-if(prev){}
-
 while (current!=NULL){
-//puts("before join");
-
-////printf("Thread ID: %ld", current->threadID);
 int error = pthread_join(current->threadID, NULL);	
 if (error){
 puts("COULD NOT JOIN THREADS");
+threadsjoined--;
 }
-////printf("(thread joined)\n");
 threadsjoined++;
-//puts("before pointer change");
-prev = current;
-
 current=current->next;
-//head = current;
-//puts("before free");
-/////free(prev->param);
-/*
-struct ThreadArgs *threadargs = prev->args;
-free(threadargs->filepath);
-free(prev->args);
-free(prev);
-*/
 }
-	
+return;
 }
 
 
@@ -793,24 +639,18 @@ free(prev);
  */
 char* appendString(char* string1, char* string2){
 int space_needed = strlen(string1) + strlen(string2) + 1;
-
 int string1_space = strlen(string1);
 int string2_space = strlen(string2);
-//printf("append string, space needed: %i, str1: %s str2: %s\n", space_needed, string1, string2);
 char* newstring = malloc(space_needed);
-
 
 for(int i=0; i<string1_space; i++){
 newstring[i]=string1[i];
-//printf("i loop, newstring[i] %c\n", newstring[i]);
 }
 
 for(int j=0; j<string2_space; j++){
 newstring[string1_space+j]=string2[j];
-//printf("j loop, newstring[j] %c\n", newstring[string1_space+j]);
 }
 newstring[space_needed-1]='\0';
-//printf("end of string cat function\n");
 
 return newstring;
 }
@@ -827,7 +667,6 @@ void* directoryHandler(void* ptr){
 
 //cast argument as pointer to thread args
 struct ThreadArgs *threadargs = (struct ThreadArgs*)ptr;
-
 //printf("thread in dirHandler, pathname: %s\n", threadargs->filepath);
 
 //extract necc. info
@@ -839,7 +678,6 @@ DIR *dirptr = opendir(dirpath);
 if(dirptr==NULL){
 printf("Could not open directory: %s\t", *(char**)ptr);
 perror("error: ");
-//freeAndJoinLinkedList(head);
 return ptr;
 }
 
@@ -851,9 +689,6 @@ while ((direntptr = readdir(dirptr))){
 
 //If the entry is a sub directory, spin off a new thread to recursively inspect
 if(direntptr->d_type==DT_DIR){
-//printf("FOUND SUB DIRECTORY");
-//printf("Directory Name: " LTBLUE "./%s\n"  RESETCOLOR, direntptr->d_name);
-
 	
 //skip over any references to current or parent directory
 if (strcmp(direntptr->d_name, ".") == 0 || strcmp(direntptr->d_name, "..") == 0){
@@ -862,23 +697,14 @@ continue;
 
 //concatenate subdirectory name and slash to current directory
 char *pathname = appendString(dirpath, direntptr->d_name);
-//char slash[] = "/";
-char *slash = malloc(sizeof(char)*2);
-slash[0]='/';
-slash[1]='\0';
+char slash[] = "/";
 char *pathnameSlash = appendString(pathname, slash);
-//printf("DIRECTORY PATHNAME: %s\n", pathnameSlash);
 
 //create new ThreadArgsStruct out of subdirectory pathname
 struct ThreadArgs *threadargs = createThreadArgsStruct(pathnameSlash, lockptr, headptr);
 
-//printf("ANOTHER: %s", threadargs->filepath);
-
 //create a Thread to handle it, and store it in a linked list
 createThreadandStoreinLinkedList(directoryHandler, threadargs);
-
-free(slash);
-//free(threadargs);
 free(pathname);
 free(pathnameSlash);
 continue;
@@ -886,23 +712,15 @@ continue;
 
 //Found a regular file, spin off new thread with this file in filehandler function
 if (direntptr->d_type==DT_REG) {
-// printf("Filename: " LTGREEN "%s\n" RESETCOLOR, direntptr->d_name);
-
 char* pathname = appendString(dirpath, direntptr->d_name);
-//printf("\tpathname: %s\t\n", pathname);
-
-
 struct ThreadArgs *threadargs = createThreadArgsStruct(pathname, lockptr, headptr);
 createThreadandStoreinLinkedList(fileHandler, threadargs);
-
 free(pathname);
-
 }
 }
 
 closedir(dirptr);	
 
-//freeAndJoinLinkedList(head);
 return ptr;
 }
 
@@ -998,7 +816,6 @@ continue;
   }
 
 
-
 /**Given a pointer to a MeanProbNode to add to the LL, and a pointer to the last added node
  *The function adds the MeanProbNode to the last poisition in the linked list
  *And returns the updated pointer to the last added node
@@ -1010,25 +827,18 @@ printf("Error, attempted to add a null node\n");
 return lastadded;
 }
 
-
 //no nodes yet added to the list
 if(lastadded==NULL){
 mpnode->nextmp = NULL;
 lastadded = mpnode;
-//printf("first add\n");
 return lastadded;
 }
-
-
 
 lastadded->nextmp=mpnode;
 mpnode->nextmp = NULL;
 lastadded = mpnode;
 
-//printf("another add\n");
-return lastadded;
-
-	
+return lastadded;	
 }
 
 /**Function takes two FileNode pointers
@@ -1043,13 +853,6 @@ printf("one of the files is null\n");
 return NULL;
 }
 
-/*
-if(file1->nexttoken==NULL || file2->nexttoken==NULL){
-printf("one of the files is empty\n");
-return NULL;
-}
-*/
-
 //pointers for traversing the list
 struct TokenNode *file1tokenptr = file1->nexttoken;
 struct TokenNode *file2tokenptr = file2->nexttoken;
@@ -1057,23 +860,6 @@ struct TokenNode *file2tokenptr = file2->nexttoken;
 //pointers for head and tail of list
 struct MeanProbNode *lastadded = NULL;
 struct MeanProbNode *head = NULL;
-
-/*
-double file1tokens = file1->num_tokens;
-double file2tokens = file2->num_tokens;
-double totaltokens = file1tokens + file2tokens;
-
-printf("total tokens: %f\n", totaltokens);
-*/
-
-//case where we have two files and no tokens
-//if(file1ptr==NULL & file2ptr==NULL){
-
-//}
-
-
-
-
 
 //iterate the two (sorted) linked lists of token nodes
 while((file1tokenptr!=NULL) || file2tokenptr!=NULL){
@@ -1112,21 +898,18 @@ if(head==NULL){
 head = lastadded;
 }
 
-
 file2tokenptr=file2tokenptr->next;
 }
-
 break;	
 }
 //if the tokens are equal
 else if(strcmp(file1tokenptr->token, file2tokenptr->token)==0){
-
 ///printf("tokens equal\n");
 struct MeanProbNode *mpn = malloc(sizeof(struct MeanProbNode));
 mpn->token = file1tokenptr->token;
 mpn->meanProb = (((file1tokenptr->probability)+(file2tokenptr->probability))/2);
 
-//function to add token to linked list, possibly return a pointer to the last added
+//add token to linked list of MeanProbNodes
 lastadded = addMeanProbNodetoLL(mpn, lastadded);
 if(head==NULL){
 head=lastadded;
@@ -1138,13 +921,9 @@ file2tokenptr = file2tokenptr->next;
 //if file one's token is alphabetically before file two's token
 else if(strcmp(file1tokenptr->token, file2tokenptr->token)<0){
 
-///printf("file1<file2\n");
-
 struct MeanProbNode *mpn = malloc(sizeof(struct MeanProbNode));
 mpn->token = file1tokenptr->token;
 mpn->meanProb = ((file1tokenptr->probability)/2);
-
-//function to add token to linked list, possibly return a pointer to the last added
 
 lastadded = addMeanProbNodetoLL(mpn, lastadded);
 if(head==NULL){
@@ -1154,14 +933,11 @@ head = lastadded;
 file1tokenptr = file1tokenptr->next;
 }
 //if file two's token is alphabetically before file one's token
-else{ //if(strcmp(file1tokenptr->token, file2tokenptr->token)>0){
+else{ 
 struct MeanProbNode *mpn = malloc(sizeof(struct MeanProbNode));
 mpn->token = file2tokenptr->token;
 mpn->meanProb = ((file2tokenptr->probability)/2);
 
-//function to add token to linked list, possibly return a pointer to the last added
-
-///printf("file2<file1\n");
 lastadded = addMeanProbNodetoLL(mpn, lastadded);
 if(head==NULL){
 head = lastadded;
@@ -1170,10 +946,7 @@ head = lastadded;
 file2tokenptr = file2tokenptr->next;
 }
 
-
 }
-
-
 
 return head;
 }
@@ -1193,7 +966,10 @@ curr=curr->nextmp;
 return;	
 }
 
-
+/**Function takes a pointer to the MeanProbNode LL head, and two pointers to FileNodes
+ *Computes the Kullbeck-Leibler Divergence of the two files, and uses this value to
+ *compute and return the JensenShannonDistance for the two files
+ */
 double computeJensenShannonDistance(struct MeanProbNode *head, struct FileNode *file1, struct FileNode *file2){
 if(file1==NULL || file2==NULL){
 return -1;
@@ -1210,7 +986,6 @@ struct MeanProbNode *meanptr = head;
 double KLDfile1 = 0;
 double KLDfile2 = 0;
 double JSD = 0;
-
 
 //iterate through file1 and find matching tokens from mean list
 while(file1ptr!=NULL){
@@ -1241,22 +1016,14 @@ meanptr=meanptr->nextmp;
 file2ptr=file2ptr->next;
 }
 //mean list has a node not in file1, advance mean ptr
-else{ //if(strcmp(file1ptr->token, meanptr->token)<0){
+else{ 
 meanptr=meanptr->nextmp;
 }	
 	
 }
 ////printf("KLD file 2: %f\n", KLDfile2);
-
-
-
 JSD = ((KLDfile1+KLDfile2)/2);
-
-
 return JSD;
-
-
-
 }
 
 /**Given a pointer to the head FileNode of a linked list
@@ -1272,12 +1039,8 @@ prev = curr;
 curr=curr->nextmp;
 free(prev);
 }
-
-
 return;	
 }
-
-
 
 void printFinalOutput(double JSD, struct FileNode *file1, struct FileNode *file2){
 printf("Number of Tokens: %f  ", ((file1->num_tokens) + (file2->num_tokens)));
@@ -1375,7 +1138,6 @@ outputNode->file2name = argument2;
 outputNode->numTokens = ((file1->num_tokens) + (file2->num_tokens));
 outputNode->next = NULL;
 
-
 if(outputhead==NULL){
 outputhead=outputNode;
 return outputhead;
@@ -1407,30 +1169,25 @@ curr=curr->next;
 //case where output Node has more tokens then all other output nodes in list
 prev->next=outputNode;
 return outputhead;
-
-
-
 }
 
+/**Function takes a pointer to the head of the Output Node LL
+ *and frees entire Output Node linked list
+ */
 void freeOutputNodeLL(struct OutputNode *outputhead){
 
 struct OutputNode *curr = outputhead;
 struct OutputNode *prev = NULL;
 
 while(curr!=NULL){
-
 prev=curr;
 curr=curr->next;
 free(prev->file1name);
 free(prev->file2name);
 free(prev);	
 }
-
-
 return;	
 }
-
-
 
 int main(int argc, char** argv){
 
@@ -1458,9 +1215,6 @@ strncpy(argument, argv[1], arg_size);
 argument[arg_size] = '\0';
 }
 
-
-printf("argument param: %s\n", argument);
-
 //Check to see if initial directory exists/is accessible
 DIR *dirptr = opendir(argument);
 	
@@ -1482,7 +1236,6 @@ struct ThreadArgs *threadargs = malloc(sizeof(struct ThreadArgs));
 threadargs->filepath = argument;
 threadargs->lockptr = lock;
 threadargs->headptr = &headptr;
-//threadargs->filepath = argv[1]; this works too
 
 //first recursive call to directoryHandler
 directoryHandler(threadargs);
@@ -1503,58 +1256,39 @@ printf("Error: Shared data structure not written to.\n");
 exit(EXIT_FAILURE);
 }
 
-
-//sort LL tokens alphabetically for each file
+//sort LL of fileNodes by number of tokens, as specified in spec
 sortFileNodeLL(&headptr);
-////printFileNodeLL(&headptr);
-
-int numOutput = 0;
+printFileNodeLL(&headptr);
 
 //Compute mean probability, Kullbeck-Leibler Divergence, and Jensen-Shannon Distance
 //from shared data structure created by threads
+int numOutput = 0;
 struct FileNode *file1ptr = headptr;
 struct FileNode *file2ptr = file1ptr->nextfile;
 struct MeanProbNode *headptr2 = NULL;
 struct OutputNode *outputhead = NULL;
 
-
 while(file1ptr!=NULL){
 
 ////printf("file 1: %s\n\n", file1ptr->filepath);	
-
 file2ptr = file1ptr->nextfile;
 while(file2ptr!=NULL){
-
 ////printf("file 2: %s\n", file2ptr->filepath);		
 headptr2 = createMeanProbTokenList(file1ptr, file2ptr);
 numOutput++;
 ////printf("head points to: %s\n", headptr2->token);
 ////printMeanProbLL(headptr2);
-
 double result = computeJensenShannonDistance(headptr2, file1ptr, file2ptr);
 //printf("JSD: %f", result);
 ////printFinalOutput(result, file1ptr, file2ptr);
-
-
 outputhead = createOutputNodeAndAddToLL(result, file1ptr, file2ptr, outputhead);
-
-
-
 file2ptr=file2ptr->nextfile;	
 freeMeanProbLL(headptr2);
-}
-
-
-	
+}	
 file1ptr = file1ptr->nextfile;	
 }
-
 printf("OutputTotal: %d\n", numOutput);
-
 printSortedFinalOutput(outputhead);
-
-
-
 
 //free everything
 freeOutputNodeLL(outputhead);
