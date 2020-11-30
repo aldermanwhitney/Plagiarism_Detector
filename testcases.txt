@@ -11,7 +11,7 @@ Output Correct: Yes, files were identical
 Size of Files: File 1: 2 Bytes (Empty Spaces)
 	       File 2: 38 Bytes
 Output Value: 0.150515
-Output Corerct: Yes, this makes sense. We are using log base 10 so comparing an empty file with a file with text results
+Output Correct: Yes, this makes sense. We are using log base 10 so comparing an empty file with a file with text results
 in: log(2) / 2 which equals 0.150515
 
 3) Compared two files with completely different words.
@@ -37,13 +37,15 @@ Correct Output: Yes, no similar words at all in either file
 Size of Files: File 1: 718176 Bytes
 	       File 2: 174688 Bytes
 Output Value: 0.071533
-Correct Output: It seems to be in the right ballpark. It is closer to identical than completely different, which makes sense considering that the books use a LOT of the same words. I also had a friend run these files in their program, and we had to exact same output. So I think its safe to say it was a good test case.
+Correct Output: It seems to be in the right ballpark. It is closer to identical than completely different, 
+which makes sense considering that the books use a LOT of the same words. 
+I also had a friend run these files in their program, and we had to exact same output.
 
 7) Compared two files both with no tokens (only a varied amount of spaces)
 Size of Files: File 1: 2 Bytes
 	       File 2: 4 Bytes
 Output Value: 0.00
-Correct Output: Yes, technically they are identical.
+Correct Output: Yes, technically they are identical since both file have no tokens.
 
 //Additional Tests\\
 

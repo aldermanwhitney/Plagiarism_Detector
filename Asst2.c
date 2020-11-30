@@ -195,7 +195,7 @@ return;
 void sortFileNodeLL(struct FileNode **headptr){
 
 if((*headptr)==NULL){
-printf("head is null");
+//printf("head is null");
 return;
 }
 
@@ -681,7 +681,7 @@ return ptr;
 struct MeanProbNode* addMeanProbNodetoLL(struct MeanProbNode *mpnode, struct MeanProbNode *lastadded){
 
 if(mpnode==NULL){
-printf("Error, attempted to add a null node\n");
+//printf("Error, attempted to add a null node\n");
 return lastadded;
 }
 
@@ -707,7 +707,7 @@ return lastadded;
 struct MeanProbNode* createMeanProbTokenList(struct FileNode *file1, struct FileNode *file2){
 
 if(file1==NULL || file2==NULL){
-printf("one of the files is null\n");
+//printf("one of the files is null\n");
 return NULL;
 }
 
@@ -950,7 +950,7 @@ return;
 struct OutputNode* createOutputNodeAndAddToLL(double JSD, struct FileNode *file1, struct FileNode *file2, struct OutputNode *outputhead){
 
 if(file1==NULL || file2==NULL){
-printf("In create output node, file1 or file2 is null.\n");
+//printf("In create output node, file1 or file2 is null.\n");
 return NULL;
 }
 
